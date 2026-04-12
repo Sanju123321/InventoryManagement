@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" role="img" aria-label="Kemtex Management System Logo">
+    <defs>
+        <linearGradient id="kmsGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#0f52ba;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#7b2ff7;stop-opacity:1" />
+        </linearGradient>
+    </defs>
+    <!-- Background circle -->
+    <circle cx="100" cy="100" r="98" fill="url(#kmsGrad)" />
+    <!-- Factory / industry icon -->
+    <g fill="#ffffff">
+        <!-- Building base -->
+        <rect x="30" y="110" width="140" height="60" rx="4" />
+        <!-- Left chimney -->
+        <rect x="45" y="75" width="22" height="40" rx="3" />
+        <!-- Center chimney -->
+        <rect x="89" y="60" width="22" height="55" rx="3" />
+        <!-- Right chimney -->
+        <rect x="133" y="80" width="22" height="35" rx="3" />
+        <!-- Smoke puffs -->
+        <circle cx="56" cy="68" r="8" fill="rgba(255,255,255,0.5)" />
+        <circle cx="100" cy="52" r="9" fill="rgba(255,255,255,0.5)" />
+        <circle cx="144" cy="73" r="7" fill="rgba(255,255,255,0.5)" />
+        <!-- Door -->
+        <rect x="85" y="135" width="30" height="35" rx="3" fill="rgba(255,255,255,0.25)" />
+        <!-- Windows -->
+        <rect x="42" y="120" width="20" height="15" rx="2" fill="rgba(255,255,255,0.3)" />
+        <rect x="138" y="120" width="20" height="15" rx="2" fill="rgba(255,255,255,0.3)" />
+    </g>
+    <!-- "K" letter mark -->
+    <text x="100" y="98" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif" font-size="0" fill="white" font-weight="900">K</text>
+</svg>

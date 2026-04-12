@@ -1,0 +1,10 @@
+User-agent: *
+Disallow: /dashboard
+Disallow: /superadmin/
+Disallow: /profile/
+Disallow: /notifications/
+Disallow: /activity-log/
+Disallow: /api/
+Allow: /
+
+Sitemap: http://localhost/inventoryManagementApril/public/sitemap.xml
