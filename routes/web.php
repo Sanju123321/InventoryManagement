@@ -30,7 +30,8 @@ use App\Http\Controllers\CompanyExportController;
 use App\Http\Controllers\SystemHealthController;
 
 // Auth routes
-Route::get('/', [AuthController::class, 'showLogin'])->name('login');
+Route::get('/', fn() => redirect('/login'));
+Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout']);
 Route::get('/register', [AuthController::class, 'showRegister']);

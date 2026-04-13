@@ -12,7 +12,7 @@ class AuthAdminMiddleware
     public function handle(Request $request, Closure $next): Response
     {
         if (!Auth::check()) {
-            return redirect('/');
+            return redirect()->guest(route('login'));
         }
 
         // Block superadmins from hitting company routes (they have their own prefix)
