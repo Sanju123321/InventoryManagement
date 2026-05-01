@@ -24,6 +24,15 @@ img, svg, video, canvas, iframe {
   height: auto;
 }
 
+/* Laravel's Tailwind pagination SVGs use w-5/h-5; without Tailwind those classes do nothing and
+   the rule above lets icons grow to 100% parent width. Clamp icons if Tailwind view is ever used. */
+nav[aria-label="Pagination Navigation"] svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  max-width: 1.25rem;
+  flex-shrink: 0;
+}
+
 /* ── Action Button Group ───────────────────────────────────────────────── */
 .action-group {
   display: flex;
