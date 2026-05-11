@@ -300,7 +300,7 @@ class SalesOrderController extends Controller
     public function export(Request $request)
     {
         $companyId = auth()->user()->company_id;
-        $query = SalesOrder::where('company_id', $companyId)->with('customer', 'creator');
+        $query = SalesOrder::where('company_id', $companyId)->with('customer', 'creator', 'items.product');
 
         if (auth()->user()->role === 'sales_admin') {
             $query->where('created_by', auth()->id());
@@ -318,30 +318,51 @@ class SalesOrderController extends Controller
             $query->whereDate('created_at', '<=', $request->to);
         }
 
-        $orders = $query->latest()->get();
+        $orders = $query->oldest()->get();
 
         $filename = 'sales_orders_' . date('Ymd_His') . '.csv';
 
         $headers = [
-            'Content-Type' => 'text/csv',
+            'Content-Type'        => 'text/csv',
             'Content-Disposition' => "attachment; filename=\"{$filename}\"",
         ];
 
         $callback = function () use ($orders) {
             $handle = fopen('php://output', 'w');
-            fputcsv($handle, ['Order #', 'Customer', 'Total (₹)', 'Paid (₹)', 'Pending (₹)', 'Status', 'Created By', 'Date']);
+            fputcsv($handle, ['Order #', 'Date', 'Customer', 'Product', 'Qty', 'Rate (₹)', 'Line Total (₹)', 'Order Total (₹)', 'Paid (₹)', 'Pending (₹)', 'Status', 'Created By']);
 
             foreach ($orders as $order) {
-                fputcsv($handle, [
-                    $order->id,
-                    $order->customer?->name ?? '-',
-                    number_format($order->total_amount, 2),
-                    number_format($order->paid_amount, 2),
-                    number_format($order->pending_amount, 2),
-                    ucfirst($order->status),
-                    $order->creator?->name ?? '-',
-                    $order->created_at->format('d M Y'),
-                ]);
+                $items = $order->items;
+                if ($items->isEmpty()) {
+                    fputcsv($handle, [
+                        $order->id,
+                        $order->created_at->format('d-m-Y'),
+                        $order->customer?->name ?? '-',
+                        '-', '', '', '',
+                        number_format($order->total_amount, 2),
+                        number_format($order->paid_amount, 2),
+                        number_format($order->pending_amount, 2),
+                        ucfirst($order->status),
+                        $order->creator?->name ?? '-',
+                    ]);
+                } else {
+                    foreach ($items as $i => $item) {
+                        fputcsv($handle, [
+                            $order->id,
+                            $order->created_at->format('d-m-Y'),
+                            $order->customer?->name ?? '-',
+                            $item->product?->name ?? '-',
+                            $item->quantity,
+                            number_format($item->price, 2),
+                            number_format($item->total, 2),
+                            $i === 0 ? number_format($order->total_amount, 2) : '',
+                            $i === 0 ? number_format($order->paid_amount, 2) : '',
+                            $i === 0 ? number_format($order->pending_amount, 2) : '',
+                            $i === 0 ? ucfirst($order->status) : '',
+                            $i === 0 ? ($order->creator?->name ?? '-') : '',
+                        ]);
+                    }
+                }
             }
 
             fclose($handle);

@@ -90,6 +90,7 @@ Route::middleware(['auth.admin', 'check.status'])->group(function () {
     // ── Sales routes (admin + sales_admin) ──────────────────────────────
     Route::middleware('check.role:admin,sales_admin')->group(function () {
         Route::get('/sales/dashboard', [SalesDashboardController::class, 'index']);
+        Route::get('/customers/export', [CustomerController::class, 'export'])->name('customers.export');
         Route::resource('/customers', CustomerController::class);
         Route::post('/customers/{customer}/payments', [CustomerController::class, 'storePayment'])->name('customers.payments.store');
         Route::get('/customers/{customer}/ledger-export', [CustomerController::class, 'exportLedger'])->name('customers.ledger.export');
@@ -102,8 +103,6 @@ Route::middleware(['auth.admin', 'check.status'])->group(function () {
         Route::get('/sales/orders/{order}', [SalesOrderController::class, 'show']);
 
         Route::post('/sales/orders/{order}/payments', [PaymentController::class, 'store']);
-
-        Route::get('/customers/export', [CustomerController::class, 'export'])->name('customers.export');
     });
 
     // ── Admin-only sales routes (product pricing & reports) ─────────────
