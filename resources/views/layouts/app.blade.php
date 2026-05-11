@@ -76,6 +76,14 @@
 </head>
 
 <body class="sb-nav-fixed">
+    <div id="pageLoaderOverlay"
+        style="position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:20000;background:rgba(15,23,42,.55);backdrop-filter:blur(2px);">
+        <div
+            style="display:flex;flex-direction:column;align-items:center;gap:.9rem;padding:1.25rem 1.5rem;border-radius:16px;background:#fff;box-shadow:0 20px 60px rgba(0,0,0,.22);min-width:220px;">
+            <div class="spinner-border text-primary" role="status" aria-hidden="true"></div>
+            <div style="font-weight:700;color:#111827;">Please wait...</div>
+        </div>
+    </div>
     @include('layouts.header')
 
     {{-- Main Content Area --}}
@@ -119,6 +127,41 @@
     </script>
     <script src="{{ asset('js/scripts.js') }}"></script>
     @yield('scripts')
+    <script>
+        (function() {
+            const overlay = document.getElementById('pageLoaderOverlay');
+            if (!overlay) return;
+
+            const showLoader = () => {
+                overlay.style.display = 'flex';
+            };
+
+            const hideLoader = () => {
+                overlay.style.display = 'none';
+            };
+
+            window.addEventListener('pageshow', hideLoader);
+
+            document.addEventListener('submit', function(event) {
+                const form = event.target;
+                if (!(form instanceof HTMLFormElement)) return;
+                if (form.dataset.loaderDisabled === 'true') return;
+                if (form.dataset.loaderSubmitted === 'true') return;
+
+                if (typeof form.checkValidity === 'function' && !form.checkValidity()) {
+                    if (typeof form.reportValidity === 'function') {
+                        form.reportValidity();
+                    }
+                    return;
+                }
+
+                event.preventDefault();
+                form.dataset.loaderSubmitted = 'true';
+                showLoader();
+                window.setTimeout(() => form.submit(), 2000);
+            }, true);
+        })();
+    </script>
 
     {{-- ── Firebase Cloud Messaging (web push) ─────────────────────────── --}}
     @auth

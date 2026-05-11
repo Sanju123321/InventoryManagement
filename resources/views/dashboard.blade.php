@@ -178,9 +178,9 @@
                                     <tr>
                                         <td>{{ $item['product']->name }}</td>
                                         <td>{{ $item['product']->sku }}</td>
-                                        <td>â‚¹{{ $item['cost'] ? number_format($item['cost']->production_cost, 2) : '-' }}
+                                        <td>₹{{ $item['cost'] ? number_format($item['cost']->production_cost, 2) : '-' }}
                                         </td>
-                                        <td>â‚¹{{ $item['cost'] ? number_format($item['cost']->selling_price, 2) : '-' }}
+                                        <td>₹{{ $item['cost'] ? number_format($item['cost']->selling_price, 2) : '-' }}
                                         </td>
                                         <td>{{ $item['total_produced'] }}</td>
                                         <td>{{ $item['total_sold'] }}</td>
@@ -193,14 +193,14 @@
                                                 <span class="badge bg-success">{{ $item['available_stock'] }}</span>
                                             @endif
                                         </td>
-                                        <td>â‚¹{{ number_format($item['total_revenue'], 2) }}</td>
+                                        <td>₹{{ number_format($item['total_revenue'], 2) }}</td>
                                         <td>
                                             @if ($item['total_profit'] >= 0)
                                                 <span
-                                                    class="text-success fw-bold">â‚¹{{ number_format($item['total_profit'], 2) }}</span>
+                                                    class="text-success fw-bold">₹{{ number_format($item['total_profit'], 2) }}</span>
                                             @else
                                                 <span
-                                                    class="text-danger fw-bold">-â‚¹{{ number_format(abs($item['total_profit']), 2) }}</span>
+                                                    class="text-danger fw-bold">-₹{{ number_format(abs($item['total_profit']), 2) }}</span>
                                             @endif
                                         </td>
                                     </tr>
@@ -216,8 +216,8 @@
                                         <td colspan="5">Totals</td>
                                         <td>{{ collect($productReport)->sum('total_sold') }}</td>
                                         <td></td>
-                                        <td>â‚¹{{ number_format(collect($productReport)->sum('total_revenue'), 2) }}</td>
-                                        <td>â‚¹{{ number_format(collect($productReport)->sum('total_profit'), 2) }}</td>
+                                        <td>₹{{ number_format(collect($productReport)->sum('total_revenue'), 2) }}</td>
+                                        <td>₹{{ number_format(collect($productReport)->sum('total_profit'), 2) }}</td>
                                     </tr>
                                 </tfoot>
                             @endif

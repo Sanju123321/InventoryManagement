@@ -86,7 +86,15 @@
                     </table>
 
                     <div class="d-flex gap-2 flex-wrap">
-                        @if ($order->status === 'pending' && auth()->user()->role !== 'sales_admin')
+                        @if (auth()->user()->role !== 'sales_admin')
+                            <a href="{{ route('sales.orders.edit', $order) }}" class="btn btn-secondary btn-sm">
+                                <i class="fas fa-pen"></i> Edit Order
+                            </a>
+                        @endif
+                        @if (
+                            $order->status === 'pending' &&
+                                auth()->user()->role !== 'sales_admin' &&
+                                optional($order->creator)->role !== 'admin')
                             <form action="{{ url('/sales/orders/' . $order->id . '/approve') }}" method="POST">
                                 @csrf @method('PATCH')
                                 <button type="submit" class="btn btn-success btn-sm"
@@ -212,7 +220,14 @@
 
     {{-- Order Items --}}
     <div class="card mb-4">
-        <div class="card-header"><i class="fas fa-box me-1"></i> Order Items</div>
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="fas fa-box me-1"></i> Order Items</span>
+            @if (auth()->user()->role !== 'sales_admin')
+                <a href="{{ route('sales.orders.edit', $order) }}" class="btn btn-sm btn-outline-secondary">
+                    <i class="fas fa-plus-circle me-1"></i> Edit / Add Items
+                </a>
+            @endif
+        </div>
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-bordered table-sm mb-0">

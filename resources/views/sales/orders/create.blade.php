@@ -75,7 +75,7 @@
                                 <td><input type="number" name="items[0][quantity]" class="form-control qty-input"
                                         min="1" value="1" required></td>
                                 <td><input type="number" name="items[0][price]" class="form-control price-input"
-                                        step="0.01" min="0" required></td>
+                                        step="0.01" min="0.01" required></td>
                                 <td><span class="line-total">0.00</span></td>
                                 <td><button type="button" class="btn btn-danger btn-sm remove-row"><i
                                             class="fas fa-times"></i></button></td>
@@ -95,9 +95,8 @@
                     Item</button>
 
                 <div class="alert alert-info">
-                    <i class="fas fa-info-circle"></i> The order will be created with <strong>Pending</strong> status.
-                    It
-                    needs to be approved before stock is deducted.
+                    <i class="fas fa-info-circle"></i> The order will be created with <strong>Pending</strong> status
+                    for sales users. Admin-created orders are approved immediately.
                 </div>
 
                 <button type="submit" class="btn btn-primary">Create Order</button>

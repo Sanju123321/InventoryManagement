@@ -8,7 +8,6 @@ use App\Models\ProductCost;
 use App\Models\SalesOrder;
 use App\Models\SalesOrderItem;
 use App\Services\ActivityLogService;
-use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -69,13 +68,14 @@ class SalesOrderController extends Controller
     public function store(Request $request)
     {
         $companyId = auth()->user()->company_id;
+        $isAdmin = auth()->user()->role === 'admin';
 
         $request->validate([
             'customer_id' => 'required|exists:customers,id',
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
             'items.*.quantity' => 'required|integer|min:1',
-            'items.*.price' => 'required|numeric|min:0',
+            'items.*.price' => 'required|numeric|gt:0',
         ]);
 
         // Validate that the customer belongs to the company
@@ -89,7 +89,7 @@ class SalesOrderController extends Controller
 
         $order = null;
 
-        DB::transaction(function () use ($request, $companyId, &$order) {
+        DB::transaction(function () use ($request, $companyId, $isAdmin, &$order) {
             $totalAmount = 0;
             $itemsData = [];
 
@@ -110,7 +110,8 @@ class SalesOrderController extends Controller
                 'total_amount' => $totalAmount,
                 'paid_amount' => 0,
                 'pending_amount' => $totalAmount,
-                'status' => 'pending',
+                'status' => $isAdmin ? 'approved' : 'pending',
+                'approved_by' => $isAdmin ? auth()->id() : null,
                 'created_by' => auth()->id(),
             ]);
 
@@ -119,47 +120,77 @@ class SalesOrderController extends Controller
             }
         });
 
-        // Check product stock levels after order creation and notify if any product is low
-        try {
-            $lowItems = [];
-            foreach ($order->items as $item) {
-                $produced = \App\Models\ProductionLog::where('company_id', $companyId)
-                    ->where('product_id', $item->product_id)
-                    ->sum('quantity_produced');
-
-                $sold = SalesOrderItem::whereHas('salesOrder', function ($q) use ($companyId) {
-                    $q->where('company_id', $companyId)->whereIn('status', ['approved', 'delivered', 'paid']);
-                })->where('product_id', $item->product_id)->sum('quantity');
-
-                $availableStock = $produced - $sold;
-                // Warn if remaining stock (after this pending order) would be <= 5
-                if (($availableStock - $item->quantity) <= 5) {
-                    $lowItems[] = [
-                        'name'      => $item->product->name,
-                        'available' => $availableStock,
-                        'ordered'   => $item->quantity,
-                    ];
-                }
-            }
-
-            if (! empty($lowItems)) {
-                app(NotificationService::class)->notifyLowStockProduct($companyId, $order->id, $lowItems);
-            }
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('Order stock notification failed: ' . $e->getMessage());
-        }
-
         ActivityLogService::log('sales.created', "Sales order #{$order->id} created for customer ID {$order->customer_id}. Total: ₹" . number_format($order->total_amount, 2) . ".");
 
-        // Notify admins of the new pending order
-        try {
-            $order->load('creator', 'customer', 'items.product');
-            app(NotificationService::class)->notifyNewOrder($order);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('New order admin notification failed: ' . $e->getMessage());
-        }
+        return redirect('/sales/orders')->with('success', $isAdmin
+            ? 'Sales order created and approved successfully.'
+            : 'Sales order created successfully.');
+    }
 
-        return redirect('/sales/orders')->with('success', 'Sales order created successfully.');
+    public function edit(SalesOrder $order)
+    {
+        abort_unless($order->company_id === auth()->user()->company_id, 403);
+        abort_if(auth()->user()->role === 'sales_admin', 403);
+
+        $companyId = auth()->user()->company_id;
+        $customers = Customer::where('company_id', $companyId)->orderBy('name')->get();
+        $products = Product::where('company_id', $companyId)->orderBy('name')->get();
+        $productCosts = ProductCost::where('company_id', $companyId)->pluck('selling_price', 'product_id');
+
+        $order->load('items.product', 'customer');
+
+        return view('sales.orders.edit', compact('order', 'customers', 'products', 'productCosts'));
+    }
+
+    public function update(Request $request, SalesOrder $order)
+    {
+        abort_unless($order->company_id === auth()->user()->company_id, 403);
+        abort_if(auth()->user()->role === 'sales_admin', 403);
+
+        $companyId = auth()->user()->company_id;
+
+        $request->validate([
+            'customer_id' => 'required|exists:customers,id',
+            'items' => 'required|array|min:1',
+            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.quantity' => 'required|integer|min:1',
+            'items.*.price' => 'required|numeric|gt:0',
+        ]);
+
+        $customer = Customer::findOrFail($request->customer_id);
+        abort_unless($customer->company_id === $companyId, 403);
+
+        DB::transaction(function () use ($request, $order) {
+            $totalAmount = 0;
+            $itemsData = [];
+
+            foreach ($request->items as $item) {
+                $lineTotal = $item['quantity'] * $item['price'];
+                $totalAmount += $lineTotal;
+                $itemsData[] = [
+                    'product_id' => $item['product_id'],
+                    'quantity' => $item['quantity'],
+                    'price' => $item['price'],
+                    'total' => $lineTotal,
+                ];
+            }
+
+            $order->update([
+                'customer_id' => $request->customer_id,
+                'total_amount' => $totalAmount,
+                'pending_amount' => max(0, $totalAmount - $order->paid_amount),
+            ]);
+
+            $order->items()->delete();
+
+            foreach ($itemsData as $item) {
+                $order->items()->create($item);
+            }
+        });
+
+        ActivityLogService::log('sales.updated', "Sales order #{$order->id} updated.");
+
+        return redirect('/sales/orders/' . $order->id)->with('success', 'Sales order updated successfully.');
     }
 
     public function show(SalesOrder $order)
@@ -225,37 +256,6 @@ class SalesOrderController extends Controller
             return back()->withErrors(['status' => 'Only pending orders can be approved.']);
         }
 
-        // Check product stock (production logs determine available stock)
-        $companyId = auth()->user()->company_id;
-        foreach ($order->items as $item) {
-            $produced = \App\Models\ProductionLog::where('company_id', $companyId)
-                ->where('product_id', $item->product_id)
-                ->sum('quantity_produced');
-
-            $sold = SalesOrderItem::whereHas('salesOrder', function ($q) use ($companyId) {
-                $q->where('company_id', $companyId)->whereIn('status', ['approved', 'delivered', 'paid']);
-            })->where('product_id', $item->product_id)->sum('quantity');
-
-            $availableStock = $produced - $sold;
-
-            if ($availableStock < $item->quantity) {
-                $productName = $item->product->name;
-
-                // Notify about insufficient stock
-                try {
-                    app(NotificationService::class)->notifyOrderInsufficientStock(
-                        $companyId, $order->id, $productName, $availableStock, $item->quantity
-                    );
-                } catch (\Throwable $e) {
-                    \Illuminate\Support\Facades\Log::error('Insufficient stock notification failed: ' . $e->getMessage());
-                }
-
-                return back()->withErrors([
-                    'stock' => "Insufficient stock for {$productName}. Available: {$availableStock}, Required: {$item->quantity}."
-                ]);
-            }
-        }
-
         $order->update([
             'status' => 'approved',
             'approved_by' => auth()->id(),
@@ -263,7 +263,7 @@ class SalesOrderController extends Controller
 
         ActivityLogService::log('sales.approved', "Sales order #{$order->id} approved.");
 
-        return back()->with('success', 'Order approved. Stock reserved.');
+        return back()->with('success', 'Order approved successfully.');
     }
 
     public function reject(SalesOrder $order)

@@ -116,6 +116,9 @@ Route::middleware(['auth.admin', 'check.status'])->group(function () {
         Route::put('/sales/product-costs/{productCost}', [ProductCostController::class, 'update']);
         Route::get('/sales/reports/products', [ProductCostController::class, 'report']);
 
+        Route::get('/sales/orders/{order}/edit', [SalesOrderController::class, 'edit'])->name('sales.orders.edit');
+        Route::put('/sales/orders/{order}', [SalesOrderController::class, 'update'])->name('sales.orders.update');
+
         // Order approval — admin only
         Route::patch('/sales/orders/{order}/approve', [SalesOrderController::class, 'approve']);
         Route::patch('/sales/orders/{order}/reject', [SalesOrderController::class, 'reject']);
