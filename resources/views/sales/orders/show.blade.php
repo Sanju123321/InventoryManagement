@@ -21,6 +21,10 @@
         </div>
     @endif
 
+    @php
+        $maxPayment = max(0, round((float) $order->total_amount - (float) $order->paid_amount, 2));
+    @endphp
+
     <div class="row mb-4">
         <div class="col-md-6">
             <div class="card">
@@ -35,16 +39,21 @@
                             <th>Status</th>
                             <td>
                                 @php
-                                    $badgeClass = match ($order->status) {
+                                    $fulfillmentStatus = $order->fulfillmentStatus();
+                                    $badgeClass = match ($fulfillmentStatus) {
                                         'pending' => 'bg-warning text-dark',
                                         'approved' => 'bg-info',
                                         'rejected' => 'bg-danger',
                                         'delivered' => 'bg-primary',
-                                        'paid' => 'bg-success',
                                         default => 'bg-secondary',
                                     };
                                 @endphp
-                                <span class="badge {{ $badgeClass }}">{{ ucfirst($order->status) }}</span>
+                                <span class="badge {{ $badgeClass }}">{{ ucfirst($fulfillmentStatus) }}</span>
+                                @if ($order->isFullyPaid() && $fulfillmentStatus !== 'rejected')
+                                    <span class="badge bg-success">Fully Paid</span>
+                                @elseif ((float) $order->paid_amount > 0)
+                                    <span class="badge bg-secondary">Partially Paid</span>
+                                @endif
                             </td>
                         </tr>
                         @php
@@ -113,14 +122,14 @@
                         <a href="{{ route('sales.orders.print', $order) }}" class="btn btn-outline-dark btn-sm" target="_blank">
                             <i class="fas fa-print"></i> Print
                         </a>
-                        @if (auth()->user()->role !== 'sales_admin')
+                        @if (auth()->user()->isAdmin())
                             <a href="{{ route('sales.orders.edit', $order) }}" class="btn btn-secondary btn-sm">
                                 <i class="fas fa-pen"></i> Edit Order
                             </a>
                         @endif
                         @if (
                             $order->status === 'pending' &&
-                                auth()->user()->role !== 'sales_admin' &&
+                                auth()->user()->isAdmin() &&
                                 optional($order->creator)->role !== 'admin')
                             <form action="{{ url('/sales/orders/' . $order->id . '/approve') }}" method="POST">
                                 @csrf @method('PATCH')
@@ -137,7 +146,7 @@
                                 </button>
                             </form>
                         @endif
-                        @if ($order->status === 'approved')
+                        @if ($order->canMarkDelivered() && auth()->user()->isAdmin())
                             <form action="{{ url('/sales/orders/' . $order->id . '/deliver') }}" method="POST">
                                 @csrf @method('PATCH')
                                 <button type="submit" class="btn btn-primary btn-sm"
@@ -146,7 +155,7 @@
                                 </button>
                             </form>
                         @endif
-                        @if (auth()->user()->role !== 'sales_admin' && in_array($order->status, ['approved', 'delivered']))
+                        @if ($order->canAssignDriver() && auth()->user()->isAdmin())
                             <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal"
                                 data-bs-target="#driverModal">
                                 <i class="fas fa-user-tie"></i>
@@ -189,20 +198,62 @@
                     </div>
                 </div>
             @endif
+
+            @if ($order->isDelivered() && auth()->user()->isAdmin())
+                <div class="card mt-3">
+                    <div class="card-header"><i class="fas fa-file-invoice me-1"></i> Invoice</div>
+                    <div class="card-body">
+                        @if ($order->invoice_path)
+                            <p class="mb-2 text-success">
+                                <i class="fas fa-check-circle me-1"></i> Invoice uploaded
+                            </p>
+                            <a href="{{ route('sales.orders.invoice.download', $order) }}"
+                                class="btn btn-outline-primary btn-sm mb-3">
+                                <i class="fas fa-download me-1"></i> Download Invoice
+                            </a>
+                        @else
+                            <p class="text-muted mb-2">No invoice uploaded yet.</p>
+                        @endif
+                        <form method="POST" action="{{ route('sales.orders.invoice.upload', $order) }}"
+                            enctype="multipart/form-data">
+                            @csrf
+                            <div class="mb-3">
+                                <label class="form-label">
+                                    {{ $order->invoice_path ? 'Replace Invoice' : 'Upload Invoice' }}
+                                </label>
+                                <input type="file" class="form-control @error('invoice') is-invalid @enderror"
+                                    name="invoice" accept=".pdf,.jpg,.jpeg,.png" required>
+                                @error('invoice')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                                <small class="text-muted">PDF, JPG, or PNG — max 5 MB</small>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-sm">
+                                <i class="fas fa-upload me-1"></i>
+                                {{ $order->invoice_path ? 'Replace Invoice' : 'Upload Invoice' }}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            @endif
         </div>
 
         <div class="col-md-6">
-            @if (in_array($order->status, ['approved', 'delivered']) && $order->pending_amount > 0)
+            @if (auth()->user()->isAdmin() && $order->canAssignDriver() && $maxPayment > 0)
                 <div class="card mb-3">
                     <div class="card-header"><i class="fas fa-money-bill-wave me-1"></i> Record Payment</div>
                     <div class="card-body">
-                        <form method="POST" action="{{ url('/sales/orders/' . $order->id . '/payments') }}">
+                        <form method="POST" action="{{ url('/sales/orders/' . $order->id . '/payments') }}" id="paymentForm">
                             @csrf
                             <div class="mb-3">
                                 <label class="form-label">Amount (Max:
-                                    ₹{{ number_format($order->pending_amount, 2) }})</label>
-                                <input type="number" class="form-control" name="amount" step="0.01" min="0.01"
-                                    max="{{ $order->pending_amount }}" required>
+                                    ₹{{ number_format($maxPayment, 2) }})</label>
+                                <input type="number" class="form-control @error('amount') is-invalid @enderror" name="amount"
+                                    id="paymentAmount" step="0.01" min="0.01" max="{{ $maxPayment }}"
+                                    value="{{ old('amount') }}" required>
+                                @error('amount')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Payment Date</label>
@@ -225,7 +276,7 @@
                 </div>
             @endif
 
-            @if (auth()->user()->role !== 'sales_admin')
+            @if (auth()->user()->isAdmin())
                 <div class="card">
                     <div class="card-header"><i class="fas fa-sticky-note me-1"></i> Admin Notes</div>
                     <div class="card-body">
@@ -249,7 +300,7 @@
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
             <span><i class="fas fa-box me-1"></i> Order Items</span>
-            @if (auth()->user()->role !== 'sales_admin')
+            @if (auth()->user()->isAdmin())
                 <a href="{{ route('sales.orders.edit', $order) }}" class="btn btn-sm btn-outline-secondary">
                     <i class="fas fa-plus-circle me-1"></i> Edit / Add Items
                 </a>
@@ -264,7 +315,7 @@
                             <th>Product</th>
                             <th>Quantity</th>
                             <th>Price</th>
-                            @if (auth()->user()->role !== 'sales_admin')
+                            @if (auth()->user()->isAdmin())
                                 <th>vs. List Price</th>
                             @endif
                             <th>Total</th>
@@ -281,7 +332,7 @@
                                 <td>{{ $item->product->name }} ({{ $item->product->sku }})</td>
                                 <td>{{ $item->quantity }} {{ $item->product->unit }}</td>
                                 <td>₹{{ number_format($item->price, 2) }}</td>
-                                @if (auth()->user()->role !== 'sales_admin')
+                                @if (auth()->user()->isAdmin())
                                     <td>
                                         @if ($diff === null)
                                             <span class="text-muted">No list price</span>
@@ -309,7 +360,7 @@
                     </tbody>
                     <tfoot>
                         <tr>
-                            <td colspan="{{ auth()->user()->role !== 'sales_admin' ? 5 : 4 }}" class="text-end fw-bold">
+                            <td colspan="{{ auth()->user()->isAdmin() ? 5 : 4 }}" class="text-end fw-bold">
                                 Grand Total:</td>
                             <td class="fw-bold">₹{{ number_format($order->total_amount, 2) }}</td>
                         </tr>
@@ -350,7 +401,7 @@
     @endif
 
     {{-- Assign Driver Modal (admin only) --}}
-    @if (auth()->user()->role !== 'sales_admin')
+    @if (auth()->user()->isAdmin())
         <div class="modal fade" id="driverModal" tabindex="-1">
             <div class="modal-dialog">
                 <div class="modal-content">
@@ -405,4 +456,38 @@
             </div>
         </div>
     @endif
+@endsection
+
+@section('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const paymentForm = document.getElementById('paymentForm');
+            const paymentAmount = document.getElementById('paymentAmount');
+
+            if (!paymentForm || !paymentAmount) {
+                return;
+            }
+
+            const maxAmount = parseFloat(paymentAmount.getAttribute('max'));
+
+            paymentForm.addEventListener('submit', function (event) {
+                const amount = parseFloat(paymentAmount.value);
+
+                if (Number.isNaN(amount) || amount <= 0) {
+                    event.preventDefault();
+                    alert('Please enter a valid payment amount.');
+                    return;
+                }
+
+                if (amount > maxAmount) {
+                    event.preventDefault();
+                    alert('Payment amount cannot exceed ₹' + maxAmount.toLocaleString('en-IN', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                    }) + '.');
+                    paymentAmount.focus();
+                }
+            });
+        });
+    </script>
 @endsection

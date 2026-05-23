@@ -248,7 +248,7 @@ class CustomerController extends Controller
 
         // FIFO auto-allocation: oldest approved/delivered orders first
         $pendingOrders = SalesOrder::where('customer_id', $customer->id)
-            ->whereIn('status', ['approved', 'delivered'])
+            ->whereIn('status', ['approved', 'delivered', 'paid'])
             ->where('pending_amount', '>', 0)
             ->orderBy('created_at')
             ->get();
@@ -264,7 +264,6 @@ class CustomerController extends Controller
             $order->update([
                 'paid_amount'    => $newPaid,
                 'pending_amount' => $newPending,
-                'status'         => $newPending <= 0 ? 'paid' : $order->status,
             ]);
 
             $remaining -= $allocate;

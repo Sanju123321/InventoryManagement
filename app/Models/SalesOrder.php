@@ -11,7 +11,7 @@ class SalesOrder extends Model
     protected $fillable = [
         'company_id', 'customer_id', 'subtotal', 'gst_rate', 'gst_amount', 'discount_amount',
         'total_amount', 'paid_amount', 'pending_amount', 'status', 'created_by', 'approved_by',
-        'notes', 'driver_name', 'driver_whatsapp', 'driver_vehicle', 'delivery_date',
+        'notes', 'driver_name', 'driver_whatsapp', 'driver_vehicle', 'delivery_date', 'invoice_path',
     ];
 
     protected $casts = [
@@ -51,5 +51,30 @@ class SalesOrder extends Model
     public function approver(): BelongsTo
     {
         return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    public function isFullyPaid(): bool
+    {
+        return (float) $this->pending_amount <= 0;
+    }
+
+    public function fulfillmentStatus(): string
+    {
+        return $this->status === 'paid' ? 'approved' : $this->status;
+    }
+
+    public function canMarkDelivered(): bool
+    {
+        return in_array($this->status, ['approved', 'paid'], true);
+    }
+
+    public function canAssignDriver(): bool
+    {
+        return in_array($this->status, ['approved', 'delivered', 'paid'], true);
+    }
+
+    public function isDelivered(): bool
+    {
+        return $this->status === 'delivered';
     }
 }

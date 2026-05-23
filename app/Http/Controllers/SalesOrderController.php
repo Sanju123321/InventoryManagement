@@ -10,6 +10,7 @@ use App\Models\SalesOrderItem;
 use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class SalesOrderController extends Controller
 {
@@ -218,7 +219,7 @@ class SalesOrderController extends Controller
 
     public function show(SalesOrder $order)
     {
-        abort_unless($order->company_id === auth()->user()->company_id, 403);
+        $this->authorizeOrderAccess($order);
         $order->load('customer', 'items.product', 'payments', 'creator', 'approver', 'company');
         $companyId = auth()->user()->company_id;
         $productCosts = ProductCost::where('company_id', $companyId)
@@ -229,7 +230,7 @@ class SalesOrderController extends Controller
 
     public function print(SalesOrder $order)
     {
-        abort_unless($order->company_id === auth()->user()->company_id, 403);
+        $this->authorizeOrderAccess($order);
         $order->load('customer', 'items.product', 'company', 'creator');
 
         return view('sales.orders.print', compact('order'));
@@ -385,9 +386,10 @@ class SalesOrderController extends Controller
 
     public function markDelivered(SalesOrder $order)
     {
+        abort_if(auth()->user()->isSalesAdmin(), 403);
         abort_unless($order->company_id === auth()->user()->company_id, 403);
 
-        if ($order->status !== 'approved') {
+        if (! $order->canMarkDelivered()) {
             return back()->withErrors(['status' => 'Only approved orders can be marked as delivered.']);
         }
 
@@ -396,6 +398,54 @@ class SalesOrderController extends Controller
         ActivityLogService::log('sales.delivered', "Sales order #{$order->id} marked as delivered.");
 
         return back()->with('success', 'Order marked as delivered.');
+    }
+
+    public function uploadInvoice(Request $request, SalesOrder $order)
+    {
+        abort_if(auth()->user()->isSalesAdmin(), 403);
+        abort_unless($order->company_id === auth()->user()->company_id, 403);
+
+        if (! $order->isDelivered()) {
+            return back()->withErrors(['invoice' => 'Invoice can only be uploaded for delivered orders.']);
+        }
+
+        $request->validate([
+            'invoice' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
+        ], [
+            'invoice.max' => 'Invoice file must not exceed 5 MB.',
+        ]);
+
+        if ($order->invoice_path && Storage::disk('public')->exists($order->invoice_path)) {
+            Storage::disk('public')->delete($order->invoice_path);
+        }
+
+        $path = $request->file('invoice')->store(
+            'invoices/' . $order->company_id,
+            'public'
+        );
+
+        $order->update(['invoice_path' => $path]);
+
+        ActivityLogService::log('sales.invoice_uploaded', "Invoice uploaded for sales order #{$order->id}.");
+
+        return back()->with('success', 'Invoice uploaded successfully.');
+    }
+
+    public function downloadInvoice(SalesOrder $order)
+    {
+        abort_if(auth()->user()->isSalesAdmin(), 403);
+        abort_unless($order->company_id === auth()->user()->company_id, 403);
+
+        if (! $order->invoice_path || ! Storage::disk('public')->exists($order->invoice_path)) {
+            abort(404, 'Invoice not found.');
+        }
+
+        $extension = pathinfo($order->invoice_path, PATHINFO_EXTENSION);
+
+        return Storage::disk('public')->download(
+            $order->invoice_path,
+            'invoice-order-' . $order->id . '.' . $extension
+        );
     }
 
     public function export(Request $request)
@@ -500,5 +550,14 @@ class SalesOrderController extends Controller
             'discount_amount' => $discountAmount,
             'grand_total' => $grandTotal,
         ];
+    }
+
+    private function authorizeOrderAccess(SalesOrder $order): void
+    {
+        abort_unless($order->company_id === auth()->user()->company_id, 403);
+
+        if (auth()->user()->isSalesAdmin()) {
+            abort_unless($order->created_by === auth()->id(), 403);
+        }
     }
 }

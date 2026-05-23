@@ -105,8 +105,6 @@ Route::middleware(['auth.admin', 'check.status'])->group(function () {
         Route::post('/sales/orders', [SalesOrderController::class, 'store']);
         Route::get('/sales/orders/{order}', [SalesOrderController::class, 'show']);
         Route::get('/sales/orders/{order}/print', [SalesOrderController::class, 'print'])->name('sales.orders.print');
-
-        Route::post('/sales/orders/{order}/payments', [PaymentController::class, 'store']);
     });
 
     // ── Admin-only sales routes (product pricing & reports) ─────────────
@@ -121,6 +119,7 @@ Route::middleware(['auth.admin', 'check.status'])->group(function () {
 
         Route::get('/sales/orders/{order}/edit', [SalesOrderController::class, 'edit'])->name('sales.orders.edit');
         Route::put('/sales/orders/{order}', [SalesOrderController::class, 'update'])->name('sales.orders.update');
+        Route::post('/sales/orders/{order}/payments', [PaymentController::class, 'store']);
 
         // Order approval — admin only
         Route::patch('/sales/orders/{order}/approve', [SalesOrderController::class, 'approve']);
@@ -128,6 +127,8 @@ Route::middleware(['auth.admin', 'check.status'])->group(function () {
         Route::patch('/sales/orders/{order}/deliver', [SalesOrderController::class, 'markDelivered']);
         Route::patch('/sales/orders/{order}/notes', [SalesOrderController::class, 'updateNotes']);
         Route::patch('/sales/orders/{order}/driver', [SalesOrderController::class, 'updateDriver']);
+        Route::post('/sales/orders/{order}/invoice', [SalesOrderController::class, 'uploadInvoice'])->name('sales.orders.invoice.upload');
+        Route::get('/sales/orders/{order}/invoice', [SalesOrderController::class, 'downloadInvoice'])->name('sales.orders.invoice.download');
     });
 
     // ── Admin-only routes ────────────────────────────────────────────────
