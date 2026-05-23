@@ -10,11 +10,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Product extends Model
 {
-    protected $fillable = ['company_id', 'name', 'sku', 'unit', 'custom_unit'];
+    protected $fillable = ['company_id', 'category_id', 'name', 'sku', 'unit', 'custom_unit'];
 
     public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class);
+    }
+
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(ProductCategory::class, 'category_id');
     }
 
     public function billOfMaterials(): HasMany

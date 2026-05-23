@@ -42,6 +42,25 @@
                 </div>
                 <div class="row mb-3">
                     <div class="col-md-6">
+                        <label for="category_id" class="form-label">Category <span class="text-danger">*</span></label>
+                        <select class="form-control @error('category_id') is-invalid @enderror" id="category_id"
+                            name="category_id" required>
+                            <option value="">Select Category</option>
+                            @foreach ($categories as $category)
+                                <option value="{{ $category->id }}"
+                                    {{ old('category_id') == $category->id ? 'selected' : '' }}>
+                                    {{ $category->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('category_id')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                        <small class="text-muted">
+                            <a href="{{ url('/product-categories/create') }}">Add new category</a>
+                        </small>
+                    </div>
+                    <div class="col-md-6">
                         <label for="unit" class="form-label">Unit <span class="text-danger">*</span></label>
                         <select class="form-control @error('unit') is-invalid @enderror" id="unit" name="unit"
                             required>

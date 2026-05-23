@@ -43,6 +43,22 @@
                 </div>
                 <div class="row mb-3">
                     <div class="col-md-6">
+                        <label for="category_id" class="form-label">Category <span class="text-danger">*</span></label>
+                        <select class="form-control @error('category_id') is-invalid @enderror" id="category_id"
+                            name="category_id" required>
+                            <option value="">Select Category</option>
+                            @foreach ($categories as $category)
+                                <option value="{{ $category->id }}"
+                                    {{ old('category_id', $product->category_id) == $category->id ? 'selected' : '' }}>
+                                    {{ $category->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('category_id')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+                    <div class="col-md-6">
                         <label for="unit" class="form-label">Unit <span class="text-danger">*</span></label>
                         @php
                             $currentUnit = old('unit', $product->custom_unit ? 'Other' : $product->unit);

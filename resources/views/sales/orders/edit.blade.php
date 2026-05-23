@@ -41,6 +41,8 @@
                     </div>
                 </div>
 
+                @include('sales.orders.partials.order-totals-fields', ['order' => $order])
+
                 <h5>Order Items</h5>
                 <div class="table-responsive">
                     <table class="table table-bordered" id="itemsTable">
@@ -93,12 +95,22 @@
                                 </tr>
                             @endforeach
                         </tbody>
-                        <tfoot>
+                        <tfoot class="table-light">
                             <tr>
-                                <td colspan="3" class="text-end fw-bold">Grand Total:</td>
-                                <td><span id="grandTotal"
-                                        class="fw-bold">₹{{ number_format($order->total_amount, 2) }}</span></td>
-                                <td></td>
+                                <td colspan="4" class="text-end">Subtotal:</td>
+                                <td><span id="displaySubtotal" class="fw-semibold">₹0.00</span></td>
+                            </tr>
+                            <tr id="gstRow">
+                                <td colspan="4" class="text-end">GST (<span id="gstRateLabel">{{ $order->gst_rate ?? 18 }}</span>%):</td>
+                                <td><span id="displayGst">₹0.00</span></td>
+                            </tr>
+                            <tr>
+                                <td colspan="4" class="text-end">Discount:</td>
+                                <td><span id="displayDiscount" class="text-danger">₹0.00</span></td>
+                            </tr>
+                            <tr>
+                                <td colspan="4" class="text-end fw-bold fs-5">Grand Total:</td>
+                                <td><span id="displayGrandTotal" class="fw-bold fs-5 text-primary">₹0.00</span></td>
                             </tr>
                         </tfoot>
                     </table>
@@ -120,20 +132,9 @@
 @endsection
 
 @section('scripts')
+    @include('sales.orders.partials.order-totals-script')
     <script>
         let rowIndex = {{ $order->items->count() }};
-
-        function recalculate() {
-            let grandTotal = 0;
-            document.querySelectorAll('.item-row').forEach(row => {
-                const qty = parseFloat(row.querySelector('.qty-input').value) || 0;
-                const price = parseFloat(row.querySelector('.price-input').value) || 0;
-                const total = qty * price;
-                row.querySelector('.line-total').textContent = total.toFixed(2);
-                grandTotal += total;
-            });
-            document.getElementById('grandTotal').textContent = '₹' + grandTotal.toFixed(2);
-        }
 
         document.getElementById('addRow').addEventListener('click', function() {
             const tbody = document.getElementById('itemsBody');
@@ -152,35 +153,11 @@
 
             tbody.appendChild(newRow);
             rowIndex++;
-            bindEvents();
-            recalculate();
+            bindOrderItemEvents();
+            recalculateOrderTotals();
         });
 
-        function bindEvents() {
-            document.querySelectorAll('.remove-row').forEach(btn => {
-                btn.onclick = function() {
-                    if (document.querySelectorAll('.item-row').length > 1) {
-                        this.closest('.item-row').remove();
-                        recalculate();
-                    }
-                };
-            });
-
-            document.querySelectorAll('.product-select').forEach(select => {
-                select.onchange = function() {
-                    const option = this.options[this.selectedIndex];
-                    const price = option.getAttribute('data-price') || 0;
-                    this.closest('.item-row').querySelector('.price-input').value = price;
-                    recalculate();
-                };
-            });
-
-            document.querySelectorAll('.qty-input, .price-input').forEach(input => {
-                input.oninput = recalculate;
-            });
-        }
-
-        bindEvents();
-        recalculate();
+        bindOrderItemEvents();
+        recalculateOrderTotals();
     </script>
 @endsection

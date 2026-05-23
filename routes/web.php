@@ -5,6 +5,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\RawMaterialController;
 use App\Http\Controllers\BomController;
 use App\Http\Controllers\ProductionLogController;
@@ -75,6 +76,7 @@ Route::middleware(['auth.admin', 'check.status'])->group(function () {
     // ── Inventory routes (admin + inventory_admin) ────────────────────────
     Route::middleware('check.role:admin,inventory_admin')->group(function () {
         Route::get('/products/export', [ProductController::class, 'export'])->name('products.export');
+        Route::resource('/product-categories', ProductCategoryController::class);
         Route::resource('/products', ProductController::class);
         Route::resource('/materials', RawMaterialController::class)->parameters(['materials' => 'rawMaterial']);
         Route::get('/inventory/export', [InventoryController::class, 'export'])->name('inventory.export');
@@ -97,10 +99,12 @@ Route::middleware(['auth.admin', 'check.status'])->group(function () {
 
         Route::get('/sales/orders', [SalesOrderController::class, 'index']);
         Route::get('/sales/orders/export', [SalesOrderController::class, 'export'])->name('sales.orders.export');
+        Route::get('/sales/orders/previous-orders', [SalesOrderController::class, 'previousOrders'])->name('sales.orders.previous-orders');
         Route::get('/sales/orders/recent-items', [SalesOrderController::class, 'recentItems'])->name('sales.orders.recent-items');
         Route::get('/sales/orders/create', [SalesOrderController::class, 'create']);
         Route::post('/sales/orders', [SalesOrderController::class, 'store']);
         Route::get('/sales/orders/{order}', [SalesOrderController::class, 'show']);
+        Route::get('/sales/orders/{order}/print', [SalesOrderController::class, 'print'])->name('sales.orders.print');
 
         Route::post('/sales/orders/{order}/payments', [PaymentController::class, 'store']);
     });

@@ -47,9 +47,33 @@
                                 <span class="badge {{ $badgeClass }}">{{ ucfirst($order->status) }}</span>
                             </td>
                         </tr>
+                        @php
+                            $subtotal = (float) ($order->subtotal > 0 ? $order->subtotal : $order->items->sum('total'));
+                            $gstRate = $order->gst_rate === null ? 18 : (int) $order->gst_rate;
+                            $gstAmount = $gstRate === 0
+                                ? 0.0
+                                : (float) ($order->gst_amount > 0 ? $order->gst_amount : round($subtotal * $gstRate / 100, 2));
+                            $discount = (float) ($order->discount_amount ?? 0);
+                        @endphp
                         <tr>
-                            <th>Total Amount</th>
-                            <td>₹{{ number_format($order->total_amount, 2) }}</td>
+                            <th>Subtotal</th>
+                            <td>₹{{ number_format($subtotal, 2) }}</td>
+                        </tr>
+                        @if ($gstRate > 0)
+                            <tr>
+                                <th>GST ({{ $gstRate }}%)</th>
+                                <td>₹{{ number_format($gstAmount, 2) }}</td>
+                            </tr>
+                        @endif
+                        @if ($discount > 0)
+                            <tr>
+                                <th>Discount</th>
+                                <td class="text-danger">− ₹{{ number_format($discount, 2) }}</td>
+                            </tr>
+                        @endif
+                        <tr>
+                            <th>Grand Total</th>
+                            <td class="fw-bold">₹{{ number_format($order->total_amount, 2) }}</td>
                         </tr>
                         <tr>
                             <th>Paid Amount</th>
@@ -86,6 +110,9 @@
                     </table>
 
                     <div class="d-flex gap-2 flex-wrap">
+                        <a href="{{ route('sales.orders.print', $order) }}" class="btn btn-outline-dark btn-sm" target="_blank">
+                            <i class="fas fa-print"></i> Print
+                        </a>
                         @if (auth()->user()->role !== 'sales_admin')
                             <a href="{{ route('sales.orders.edit', $order) }}" class="btn btn-secondary btn-sm">
                                 <i class="fas fa-pen"></i> Edit Order

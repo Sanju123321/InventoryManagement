@@ -62,10 +62,15 @@
                             <div class="sb-nav-link-icon"><i class="fas fa-boxes-stacked"></i></div>
                             Inventory
                         </a>
-                        <a class="nav-link {{ request()->is('products*') ? 'active' : '' }}"
+                        <a class="nav-link {{ request()->is('products*') && !request()->is('product-categories*') ? 'active' : '' }}"
                             href="{{ url('/products') }}">
                             <div class="sb-nav-link-icon"><i class="fas fa-box"></i></div>
                             Products
+                        </a>
+                        <a class="nav-link {{ request()->is('product-categories*') ? 'active' : '' }}"
+                            href="{{ url('/product-categories') }}">
+                            <div class="sb-nav-link-icon"><i class="fas fa-tags"></i></div>
+                            Categories
                         </a>
                         <a class="nav-link {{ request()->is('materials*') ? 'active' : '' }}"
                             href="{{ url('/materials') }}">

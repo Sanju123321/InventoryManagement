@@ -9,9 +9,18 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class SalesOrder extends Model
 {
     protected $fillable = [
-        'company_id', 'customer_id', 'total_amount', 'paid_amount',
-        'pending_amount', 'status', 'created_by', 'approved_by',
+        'company_id', 'customer_id', 'subtotal', 'gst_rate', 'gst_amount', 'discount_amount',
+        'total_amount', 'paid_amount', 'pending_amount', 'status', 'created_by', 'approved_by',
         'notes', 'driver_name', 'driver_whatsapp', 'driver_vehicle', 'delivery_date',
+    ];
+
+    protected $casts = [
+        'subtotal' => 'decimal:2',
+        'gst_amount' => 'decimal:2',
+        'discount_amount' => 'decimal:2',
+        'total_amount' => 'decimal:2',
+        'paid_amount' => 'decimal:2',
+        'pending_amount' => 'decimal:2',
     ];
 
     public function company(): BelongsTo
