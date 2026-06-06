@@ -13,8 +13,8 @@ class PaymentController extends Controller
         abort_unless(auth()->user()->isAdmin(), 403);
         abort_unless($order->company_id === auth()->user()->company_id, 403);
 
-        if (! in_array($order->status, ['approved', 'delivered', 'paid'])) {
-            return back()->withErrors(['status' => 'Payments can only be made on approved or delivered orders.']);
+        if (! in_array($order->status, ['approved', 'dispatched', 'paid'])) {
+            return back()->withErrors(['status' => 'Payments can only be made on approved or dispatched orders.']);
         }
 
         $order->refresh();

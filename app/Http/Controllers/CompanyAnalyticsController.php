@@ -43,7 +43,7 @@ class CompanyAnalyticsController extends Controller
                 DB::raw('SUM(total_amount) as revenue')
             )
             ->where('company_id', $companyId)
-            ->whereIn('status', ['approved', 'delivered', 'paid'])
+            ->whereIn('status', ['approved', 'dispatched', 'paid'])
             ->where('created_at', '>=', $now->copy()->subMonths(5)->startOfMonth())
             ->groupBy('month')
             ->orderBy('month')
@@ -86,7 +86,7 @@ class CompanyAnalyticsController extends Controller
             )
             ->whereHas('salesOrder', fn($q) => $q
                 ->where('company_id', $companyId)
-                ->whereIn('status', ['approved', 'delivered', 'paid'])
+                ->whereIn('status', ['approved', 'dispatched', 'paid'])
             )
             ->groupBy('product_id')
             ->orderByDesc('revenue')
@@ -115,7 +115,7 @@ class CompanyAnalyticsController extends Controller
             'pending'   => '#f6c23e',
             'approved'  => '#1cc88a',
             'rejected'  => '#e74a3b',
-            'delivered' => '#4e73df',
+            'dispatched' => '#4e73df',
             'paid'      => '#36b9cc',
         ];
         $statusColorList = [];
@@ -137,7 +137,7 @@ class CompanyAnalyticsController extends Controller
             'total_materials'  => RawMaterial::where('company_id', $companyId)->count(),
             'total_production' => ProductionLog::where('company_id', $companyId)->sum('quantity_produced'),
             'total_revenue'    => SalesOrder::where('company_id', $companyId)
-                                    ->whereIn('status', ['approved', 'delivered', 'paid'])->sum('total_amount'),
+                                    ->whereIn('status', ['approved', 'dispatched', 'paid'])->sum('total_amount'),
             'pending_revenue'  => SalesOrder::where('company_id', $companyId)
                                     ->where('status', 'pending')->sum('total_amount'),
             'total_orders'     => SalesOrder::where('company_id', $companyId)->count(),

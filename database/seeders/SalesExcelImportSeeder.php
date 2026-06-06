@@ -23,7 +23,7 @@ class SalesExcelImportSeeder extends Seeder
 {
     private const COMPANY_ID = 5;
 
-    private const STATUS = 'delivered';
+    private const STATUS = 'dispatched';
 
     private const CREATED_BY_USER_ID = 2;
 

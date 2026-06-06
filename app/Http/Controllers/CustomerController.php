@@ -46,6 +46,7 @@ class CustomerController extends Controller
             'phone' => 'nullable|string|max:20',
             'email' => 'nullable|email|max:255',
             'address' => 'nullable|string|max:500',
+            'google_location' => 'nullable|string|max:2000',
             'authorized_person' => 'nullable|string|max:255',
             'contact_details' => 'required|digits:10',
             'gst_number' => 'required|string|max:20',
@@ -59,6 +60,7 @@ class CustomerController extends Controller
             'phone' => $request->phone,
             'email' => $request->email,
             'address' => $request->address,
+            'google_location' => Customer::normalizeGoogleLocation($request->google_location),
             'authorized_person' => $request->authorized_person,
             'contact_details' => $request->contact_details,
             'gst_number' => $request->gst_number,
@@ -248,7 +250,7 @@ class CustomerController extends Controller
 
         // FIFO auto-allocation: oldest approved/delivered orders first
         $pendingOrders = SalesOrder::where('customer_id', $customer->id)
-            ->whereIn('status', ['approved', 'delivered', 'paid'])
+            ->whereIn('status', ['approved', 'dispatched', 'paid'])
             ->where('pending_amount', '>', 0)
             ->orderBy('created_at')
             ->get();
@@ -298,13 +300,17 @@ class CustomerController extends Controller
             'phone' => 'nullable|string|max:20',
             'email' => 'nullable|email|max:255',
             'address' => 'nullable|string|max:500',
+            'google_location' => 'nullable|string|max:2000',
             'authorized_person' => 'nullable|string|max:255',
             'contact_details' => 'required|digits:10',
             'gst_number' => 'required|string|max:20',
             'md_details' => 'nullable|string|max:2000',
         ]);
 
-        $customer->update($request->only('name', 'phone', 'email', 'address', 'authorized_person', 'contact_details', 'gst_number', 'md_details'));
+        $customer->update([
+            ...$request->only('name', 'phone', 'email', 'address', 'authorized_person', 'contact_details', 'gst_number', 'md_details'),
+            'google_location' => Customer::normalizeGoogleLocation($request->google_location),
+        ]);
 
         ActivityLogService::log('customer.updated', "Customer '{$customer->name}' updated.");
         return redirect('/customers')->with('success', 'Customer updated successfully.');

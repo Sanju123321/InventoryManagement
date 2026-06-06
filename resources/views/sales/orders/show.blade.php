@@ -36,6 +36,10 @@
                             <td>{{ $order->customer->name }}</td>
                         </tr>
                         <tr>
+                            <th>Firm</th>
+                            <td>{{ $order->firm->name ?? '-' }}</td>
+                        </tr>
+                        <tr>
                             <th>Status</th>
                             <td>
                                 @php
@@ -44,15 +48,20 @@
                                         'pending' => 'bg-warning text-dark',
                                         'approved' => 'bg-info',
                                         'rejected' => 'bg-danger',
-                                        'delivered' => 'bg-primary',
+                                        'dispatched' => 'bg-primary',
                                         default => 'bg-secondary',
                                     };
                                 @endphp
-                                <span class="badge {{ $badgeClass }}">{{ ucfirst($fulfillmentStatus) }}</span>
+                                <span class="badge {{ $badgeClass }}">
+                                    {{ $fulfillmentStatus === 'dispatched' ? 'Dispatched' : ucfirst($fulfillmentStatus) }}
+                                </span>
                                 @if ($order->isFullyPaid() && $fulfillmentStatus !== 'rejected')
                                     <span class="badge bg-success">Fully Paid</span>
                                 @elseif ((float) $order->paid_amount > 0)
                                     <span class="badge bg-secondary">Partially Paid</span>
+                                @endif
+                                @if ($order->receiving_ok)
+                                    <span class="badge bg-success">Receiving Ok</span>
                                 @endif
                             </td>
                         </tr>
@@ -146,12 +155,12 @@
                                 </button>
                             </form>
                         @endif
-                        @if ($order->canMarkDelivered() && auth()->user()->isAdmin())
-                            <form action="{{ url('/sales/orders/' . $order->id . '/deliver') }}" method="POST">
+                        @if ($order->canMarkDispatched() && auth()->user()->isAdmin())
+                            <form action="{{ url('/sales/orders/' . $order->id . '/dispatch') }}" method="POST">
                                 @csrf @method('PATCH')
                                 <button type="submit" class="btn btn-primary btn-sm"
-                                    onclick="return confirm('Mark as delivered?')">
-                                    <i class="fas fa-truck"></i> Mark Delivered
+                                    onclick="return confirm('Mark as dispatched?')">
+                                    <i class="fas fa-truck"></i> Mark Dispatch
                                 </button>
                             </form>
                         @endif
@@ -161,6 +170,15 @@
                                 <i class="fas fa-user-tie"></i>
                                 {{ $order->driver_name ? 'Edit Driver' : 'Assign Driver' }}
                             </button>
+                        @endif
+                        @if ($order->canMarkReceivingOk() && auth()->user()->isAdmin())
+                            <form action="{{ route('sales.orders.receiving-ok', $order) }}" method="POST">
+                                @csrf @method('PATCH')
+                                <button type="submit" class="btn btn-success btn-sm"
+                                    onclick="return confirm('Mark this order as Receiving Ok?')">
+                                    <i class="fas fa-check-circle"></i> Receiving Ok
+                                </button>
+                            </form>
                         @endif
                     </div>
                 </div>
@@ -190,8 +208,32 @@
                                 <th>Delivery Date</th>
                                 <td>{{ \Carbon\Carbon::parse($order->delivery_date)->format('d-m-Y') }}</td>
                             </tr>
+                            @if ($order->customer->mapsNavigationUrl())
+                                <tr>
+                                    <th>Delivery Location</th>
+                                    <td>
+                                        <a href="{{ $order->customer->mapsNavigationUrl() }}" target="_blank" rel="noopener">
+                                            <i class="fas fa-map-marker-alt me-1"></i> Open in Google Maps
+                                        </a>
+                                    </td>
+                                </tr>
+                            @endif
                         </table>
-                        <a href="https://wa.me/91{{ $order->driver_whatsapp }}?text={{ urlencode('Delivery Order #' . $order->id . ' for ' . $order->customer->name . ' on ' . \Carbon\Carbon::parse($order->delivery_date)->format('d-m-Y') . '. Total: ₹' . number_format($order->total_amount, 2)) }}"
+                        @php
+                            $driverWhatsAppMessage = 'Delivery Order #' . $order->id
+                                . ' for ' . $order->customer->name
+                                . ' on ' . \Carbon\Carbon::parse($order->delivery_date)->format('d-m-Y')
+                                . '. Total: Rs ' . number_format($order->total_amount, 2);
+
+                            if ($order->customer->address) {
+                                $driverWhatsAppMessage .= "\nAddress: " . $order->customer->address;
+                            }
+
+                            if ($mapsUrl = $order->customer->mapsNavigationUrl()) {
+                                $driverWhatsAppMessage .= "\nNavigate here: " . $mapsUrl;
+                            }
+                        @endphp
+                        <a href="https://wa.me/91{{ $order->driver_whatsapp }}?text={{ urlencode($driverWhatsAppMessage) }}"
                             target="_blank" class="btn btn-success btn-sm mt-2">
                             <i class="fab fa-whatsapp"></i> Send WhatsApp to Driver
                         </a>
@@ -199,7 +241,7 @@
                 </div>
             @endif
 
-            @if ($order->isDelivered() && auth()->user()->isAdmin())
+            @if ($order->isDispatched() && auth()->user()->isAdmin())
                 <div class="card mt-3">
                     <div class="card-header"><i class="fas fa-file-invoice me-1"></i> Invoice</div>
                     <div class="card-body">

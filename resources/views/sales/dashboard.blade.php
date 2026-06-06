@@ -120,17 +120,93 @@
         }
 
         /* ── Responsive tweaks ──────────────────────────────────── */
-        @media (max-width: 575.98px) {
-            .stat-value {
-                font-size: 1.3rem;
+        .firm-mobile-card {
+            border: 1px solid rgba(0, 0, 0, .08);
+            border-radius: .75rem;
+            padding: .85rem 1rem;
+            background: #fff;
+        }
+
+        .firm-mobile-card + .firm-mobile-card {
+            margin-top: .65rem;
+        }
+
+        .firm-mobile-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: .5rem .75rem;
+            margin-top: .5rem;
+        }
+
+        .firm-mobile-grid label {
+            display: block;
+            font-size: .68rem;
+            text-transform: uppercase;
+            letter-spacing: .03em;
+            color: #6c757d;
+            margin-bottom: .1rem;
+        }
+
+        .firm-mobile-grid span {
+            font-size: .84rem;
+            font-weight: 600;
+        }
+
+        .dash-kpi-value {
+            word-break: break-word;
+            overflow-wrap: anywhere;
+        }
+
+        @media (max-width: 991.98px) {
+            .sec-card .table td,
+            .sec-card .table th {
+                padding: .55rem .75rem;
+                font-size: .8rem;
             }
 
             .chart-box {
-                height: 200px;
+                height: 220px;
+            }
+
+            .chart-box.chart-box-tall {
+                height: 280px;
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .stat-card .card-body {
+                padding: 1rem 1.1rem;
+            }
+
+            .stat-value {
+                font-size: 1.15rem;
+            }
+
+            .stat-icon {
+                width: 42px;
+                height: 42px;
+                font-size: 1.1rem;
+            }
+
+            .chart-box {
+                height: 210px;
+            }
+
+            .chart-box.chart-box-tall {
+                height: 300px;
             }
 
             .page-header h1 {
-                font-size: 1.5rem;
+                font-size: 1.35rem;
+            }
+
+            .sec-card .card-header {
+                padding: .75rem 1rem;
+                font-size: .92rem;
+            }
+
+            .firm-mobile-grid {
+                grid-template-columns: 1fr;
             }
         }
 
@@ -171,7 +247,7 @@
                 <div class="card-body d-flex justify-content-between align-items-center gap-2">
                     <div>
                         <div class="stat-label">Daily Income</div>
-                        <div class="stat-value">₹{{ number_format($dailyIncome, 2) }}</div>
+                        <div class="stat-value dash-kpi-value">₹{{ number_format($dailyIncome, 2) }}</div>
                         <div class="small stat-link text-white">Today</div>
                     </div>
                     <div class="stat-icon"><i class="fas fa-rupee-sign"></i></div>
@@ -183,7 +259,7 @@
                 <div class="card-body d-flex justify-content-between align-items-center gap-2">
                     <div>
                         <div class="stat-label">Total Sales</div>
-                        <div class="stat-value">₹{{ number_format($totalSales, 2) }}</div>
+                        <div class="stat-value dash-kpi-value">₹{{ number_format($totalSales, 2) }}</div>
                         <a href="{{ url('/sales/orders') }}" class="small stat-link text-white">View Orders →</a>
                     </div>
                     <div class="stat-icon"><i class="fas fa-chart-bar"></i></div>
@@ -195,7 +271,7 @@
                 <div class="card-body d-flex justify-content-between align-items-center gap-2">
                     <div>
                         <div class="stat-label">Pending Payments</div>
-                        <div class="stat-value">₹{{ number_format($totalPending, 2) }}</div>
+                        <div class="stat-value dash-kpi-value">₹{{ number_format($totalPending, 2) }}</div>
                         <div class="small stat-link text-white">Awaiting collection</div>
                     </div>
                     <div class="stat-icon"><i class="fas fa-clock"></i></div>
@@ -237,6 +313,124 @@
                 </div>
                 <div class="card-body p-3 d-flex align-items-center justify-content-center">
                     <div class="chart-box w-100"><canvas id="statusChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ── Firm-wise Sales Report ─────────────────────────────── --}}
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-xl-7">
+            <div class="card sec-card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <span><i class="fas fa-building me-2 text-primary"></i>Firm-wise Sales Report</span>
+                    <a href="{{ url('/firms') }}" class="btn btn-outline-secondary btn-sm">Manage Firms</a>
+                </div>
+                <div class="card-body d-none d-md-block">
+                    <div class="table-scroll">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Firm</th>
+                                    <th>Orders</th>
+                                    <th>Total Sales</th>
+                                    <th>Paid</th>
+                                    <th>Pending</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($firmWiseSales as $firmSale)
+                                    <tr>
+                                        <td class="fw-semibold">{{ $firmSale['firm_name'] }}</td>
+                                        <td><span class="badge bg-secondary rounded-pill">{{ $firmSale['order_count'] }}</span></td>
+                                        <td class="fw-bold">₹{{ number_format($firmSale['total_sales'], 2) }}</td>
+                                        <td class="text-success">₹{{ number_format($firmSale['total_paid'], 2) }}</td>
+                                        <td class="text-danger">₹{{ number_format($firmSale['total_pending'], 2) }}</td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="5" class="text-center py-4 text-muted fst-italic">
+                                            No firms found. Add firms under Administration to track firm-wise sales.
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                            @if ($firmWiseSales->isNotEmpty())
+                                <tfoot class="table-light">
+                                    <tr class="fw-bold">
+                                        <td>Total</td>
+                                        <td>{{ $firmWiseSales->sum('order_count') }}</td>
+                                        <td>₹{{ number_format($firmWiseSales->sum('total_sales'), 2) }}</td>
+                                        <td class="text-success">₹{{ number_format($firmWiseSales->sum('total_paid'), 2) }}</td>
+                                        <td class="text-danger">₹{{ number_format($firmWiseSales->sum('total_pending'), 2) }}</td>
+                                    </tr>
+                                </tfoot>
+                            @endif
+                        </table>
+                    </div>
+                </div>
+                <div class="card-body d-md-none p-3">
+                    @forelse($firmWiseSales as $firmSale)
+                        <div class="firm-mobile-card shadow-sm">
+                            <div class="d-flex justify-content-between align-items-start gap-2">
+                                <div class="fw-bold">{{ $firmSale['firm_name'] }}</div>
+                                <span class="badge bg-secondary rounded-pill">{{ $firmSale['order_count'] }} orders</span>
+                            </div>
+                            <div class="firm-mobile-grid">
+                                <div>
+                                    <label>Total Sales</label>
+                                    <span>₹{{ number_format($firmSale['total_sales'], 2) }}</span>
+                                </div>
+                                <div>
+                                    <label>Paid</label>
+                                    <span class="text-success">₹{{ number_format($firmSale['total_paid'], 2) }}</span>
+                                </div>
+                                <div>
+                                    <label>Pending</label>
+                                    <span class="text-danger">₹{{ number_format($firmSale['total_pending'], 2) }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    @empty
+                        <p class="text-center text-muted mb-0 py-3 fst-italic">No firms found.</p>
+                    @endforelse
+                    @if ($firmWiseSales->isNotEmpty())
+                        <div class="firm-mobile-card mt-3 bg-light fw-bold">
+                            <div>Total</div>
+                            <div class="firm-mobile-grid">
+                                <div>
+                                    <label>Orders</label>
+                                    <span>{{ $firmWiseSales->sum('order_count') }}</span>
+                                </div>
+                                <div>
+                                    <label>Sales</label>
+                                    <span>₹{{ number_format($firmWiseSales->sum('total_sales'), 2) }}</span>
+                                </div>
+                                <div>
+                                    <label>Paid</label>
+                                    <span class="text-success">₹{{ number_format($firmWiseSales->sum('total_paid'), 2) }}</span>
+                                </div>
+                                <div>
+                                    <label>Pending</label>
+                                    <span class="text-danger">₹{{ number_format($firmWiseSales->sum('total_pending'), 2) }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-xl-5">
+            <div class="card sec-card h-100">
+                <div class="card-header">
+                    <i class="fas fa-chart-column me-2 text-success"></i>Firm Sales Comparison
+                </div>
+                <div class="card-body p-3">
+                    @if ($firmWiseSales->isNotEmpty())
+                        <div class="chart-box chart-box-tall"><canvas id="firmSalesChart"></canvas></div>
+                    @else
+                        <p class="text-center text-muted py-5 mb-0 fst-italic">No firm sales data to display.</p>
+                    @endif
                 </div>
             </div>
         </div>
@@ -312,7 +506,7 @@
                                                     'pending' => 'bg-warning text-dark',
                                                     'approved' => 'bg-info text-white',
                                                     'rejected' => 'bg-danger',
-                                                    'delivered' => 'bg-primary',
+                                                    'dispatched' => 'bg-primary',
                                                     'paid' => 'bg-success',
                                                     default => 'bg-secondary',
                                                 };
@@ -468,5 +662,61 @@
                 }
             }
         });
+
+        @if ($firmWiseSales->isNotEmpty())
+        const firmChartEl = document.getElementById('firmSalesChart');
+        const firmChartHorizontal = window.innerWidth < 768;
+
+        new Chart(firmChartEl, {
+            type: 'bar',
+            data: {
+                labels: @json($firmChartLabels),
+                datasets: [{
+                    label: 'Total Sales (₹)',
+                    data: @json($firmChartSales),
+                    backgroundColor: [
+                        '#1a6fbf', '#0f9b58', '#e67e22', '#8e44ad', '#c0392b', '#16a085', '#2c3e50', '#d35400'
+                    ],
+                    borderRadius: 8,
+                    borderSkipped: false,
+                }]
+            },
+            options: {
+                indexAxis: firmChartHorizontal ? 'y' : 'x',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => {
+                                const value = firmChartHorizontal ? ctx.parsed.x : ctx.parsed.y;
+                                return ' ₹' + Number(value).toLocaleString('en-IN');
+                            }
+                        }
+                    }
+                },
+                scales: firmChartHorizontal ? {
+                    x: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(0,0,0,.05)' },
+                        ticks: {
+                            callback: v => '₹' + Number(v).toLocaleString('en-IN')
+                        }
+                    },
+                    y: { grid: { display: false } }
+                } : {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(0,0,0,.05)' },
+                        ticks: {
+                            callback: v => '₹' + Number(v).toLocaleString('en-IN')
+                        }
+                    },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+        @endif
     </script>
 @endsection

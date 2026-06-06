@@ -135,6 +135,11 @@
                             <div class="sb-nav-link-icon"><i class="fas fa-user-shield"></i></div>
                             User Management
                         </a>
+                        <a class="nav-link {{ request()->routeIs('firms.*') ? 'active' : '' }}"
+                            href="{{ route('firms.index') }}">
+                            <div class="sb-nav-link-icon"><i class="fas fa-building"></i></div>
+                            Firms
+                        </a>
                         <a class="nav-link {{ request()->routeIs('analytics.index') ? 'active' : '' }}"
                             href="{{ route('analytics.index') }}">
                             <div class="sb-nav-link-icon"><i class="fas fa-chart-bar"></i></div>

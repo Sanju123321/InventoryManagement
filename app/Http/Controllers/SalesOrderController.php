@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
+use App\Models\Firm;
 use App\Models\Product;
 use App\Models\ProductCost;
 use App\Models\SalesOrder;
@@ -11,13 +12,14 @@ use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class SalesOrderController extends Controller
 {
     public function index(Request $request)
     {
         $companyId = auth()->user()->company_id;
-        $query = SalesOrder::where('company_id', $companyId)->with('customer', 'creator');
+        $query = SalesOrder::where('company_id', $companyId)->with('customer', 'firm', 'creator');
 
         // Sales admins see only their own orders
         if (auth()->user()->role === 'sales_admin') {
@@ -29,6 +31,9 @@ class SalesOrderController extends Controller
         }
         if ($request->filled('customer_id')) {
             $query->where('customer_id', $request->customer_id);
+        }
+        if ($request->filled('firm_id')) {
+            $query->where('firm_id', $request->firm_id);
         }
         if ($request->filled('from')) {
             $query->whereDate('created_at', '>=', $request->from);
@@ -45,8 +50,9 @@ class SalesOrderController extends Controller
             $customersQuery->where('created_by', auth()->id());
         }
         $customers = $customersQuery->orderBy('name')->get();
+        $firms = Firm::where('company_id', $companyId)->orderBy('name')->get();
 
-        return view('sales.orders.index', compact('orders', 'customers'));
+        return view('sales.orders.index', compact('orders', 'customers', 'firms'));
     }
 
     public function create()
@@ -59,11 +65,12 @@ class SalesOrderController extends Controller
             $customersQuery->where('created_by', auth()->id());
         }
         $customers = $customersQuery->orderBy('name')->get();
+        $firms = $this->activeFirmsForCompany($companyId);
 
         $products = Product::where('company_id', $companyId)->orderBy('name')->get();
         $productCosts = ProductCost::where('company_id', $companyId)->pluck('selling_price', 'product_id');
 
-        return view('sales.orders.create', compact('customers', 'products', 'productCosts'));
+        return view('sales.orders.create', compact('customers', 'firms', 'products', 'productCosts'));
     }
 
     public function store(Request $request)
@@ -73,6 +80,7 @@ class SalesOrderController extends Controller
 
         $request->validate([
             'customer_id' => 'required|exists:customers,id',
+            'firm_id' => $this->firmValidationRule($companyId),
             'gst_rate' => 'required|in:0,5,18',
             'discount_amount' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string|max:2000',
@@ -114,6 +122,7 @@ class SalesOrderController extends Controller
             $order = SalesOrder::create([
                 'company_id' => $companyId,
                 'customer_id' => $request->customer_id,
+                'firm_id' => $request->firm_id,
                 'subtotal' => $totals['subtotal'],
                 'gst_rate' => $totals['gst_rate'],
                 'gst_amount' => $totals['gst_amount'],
@@ -146,12 +155,13 @@ class SalesOrderController extends Controller
 
         $companyId = auth()->user()->company_id;
         $customers = Customer::where('company_id', $companyId)->orderBy('name')->get();
+        $firms = $this->firmsForOrderForm($companyId, $order->firm_id);
         $products = Product::where('company_id', $companyId)->orderBy('name')->get();
         $productCosts = ProductCost::where('company_id', $companyId)->pluck('selling_price', 'product_id');
 
-        $order->load('items.product', 'customer');
+        $order->load('items.product', 'customer', 'firm');
 
-        return view('sales.orders.edit', compact('order', 'customers', 'products', 'productCosts'));
+        return view('sales.orders.edit', compact('order', 'customers', 'firms', 'products', 'productCosts'));
     }
 
     public function update(Request $request, SalesOrder $order)
@@ -163,6 +173,7 @@ class SalesOrderController extends Controller
 
         $request->validate([
             'customer_id' => 'required|exists:customers,id',
+            'firm_id' => $this->firmValidationRule($companyId, $order->firm_id),
             'gst_rate' => 'required|in:0,5,18',
             'discount_amount' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string|max:2000',
@@ -196,6 +207,7 @@ class SalesOrderController extends Controller
 
             $order->update([
                 'customer_id' => $request->customer_id,
+                'firm_id' => $request->firm_id,
                 'subtotal' => $totals['subtotal'],
                 'gst_rate' => $totals['gst_rate'],
                 'gst_amount' => $totals['gst_amount'],
@@ -220,7 +232,7 @@ class SalesOrderController extends Controller
     public function show(SalesOrder $order)
     {
         $this->authorizeOrderAccess($order);
-        $order->load('customer', 'items.product', 'payments', 'creator', 'approver', 'company');
+        $order->load('customer', 'firm', 'items.product', 'payments', 'creator', 'approver', 'company');
         $companyId = auth()->user()->company_id;
         $productCosts = ProductCost::where('company_id', $companyId)
             ->pluck('selling_price', 'product_id');
@@ -384,20 +396,52 @@ class SalesOrderController extends Controller
         return back()->with('success', 'Order rejected.');
     }
 
-    public function markDelivered(SalesOrder $order)
+    public function markDispatched(SalesOrder $order)
     {
         abort_if(auth()->user()->isSalesAdmin(), 403);
         abort_unless($order->company_id === auth()->user()->company_id, 403);
 
-        if (! $order->canMarkDelivered()) {
-            return back()->withErrors(['status' => 'Only approved orders can be marked as delivered.']);
+        if (! $order->canMarkDispatched()) {
+            return back()->withErrors(['status' => 'Only approved orders can be marked as dispatched.']);
         }
 
-        $order->update(['status' => 'delivered']);
+        $order->update(['status' => 'dispatched']);
 
-        ActivityLogService::log('sales.delivered', "Sales order #{$order->id} marked as delivered.");
+        ActivityLogService::log('sales.dispatched', "Sales order #{$order->id} marked as dispatched.");
 
-        return back()->with('success', 'Order marked as delivered.');
+        return back()->with('success', 'Order marked as dispatched.');
+    }
+
+    public function markReceivingOk(SalesOrder $order)
+    {
+        abort_if(auth()->user()->isSalesAdmin(), 403);
+        abort_unless($order->company_id === auth()->user()->company_id, 403);
+
+        if (! $order->canMarkReceivingOk()) {
+            return back()->withErrors(['receiving_ok' => 'Invoice must be uploaded before marking receiving ok.']);
+        }
+
+        $order->update([
+            'receiving_ok' => true,
+            'receiving_ok_at' => now(),
+        ]);
+
+        ActivityLogService::log('sales.receiving_ok', "Sales order #{$order->id} marked as receiving ok.");
+
+        return back()->with('success', 'Order marked as Receiving Ok.');
+    }
+
+    public function destroy(SalesOrder $order)
+    {
+        abort_if(auth()->user()->isSalesAdmin(), 403);
+        abort_unless($order->company_id === auth()->user()->company_id, 403);
+
+        $orderId = $order->id;
+        $order->delete();
+
+        ActivityLogService::log('sales.deleted', "Sales order #{$orderId} soft-deleted.");
+
+        return redirect('/sales/orders')->with('success', "Order #{$orderId} deleted successfully.");
     }
 
     public function uploadInvoice(Request $request, SalesOrder $order)
@@ -405,8 +449,8 @@ class SalesOrderController extends Controller
         abort_if(auth()->user()->isSalesAdmin(), 403);
         abort_unless($order->company_id === auth()->user()->company_id, 403);
 
-        if (! $order->isDelivered()) {
-            return back()->withErrors(['invoice' => 'Invoice can only be uploaded for delivered orders.']);
+        if (! $order->isDispatched()) {
+            return back()->withErrors(['invoice' => 'Invoice can only be uploaded for dispatched orders.']);
         }
 
         $request->validate([
@@ -451,7 +495,7 @@ class SalesOrderController extends Controller
     public function export(Request $request)
     {
         $companyId = auth()->user()->company_id;
-        $query = SalesOrder::where('company_id', $companyId)->with('customer', 'creator', 'items.product');
+        $query = SalesOrder::where('company_id', $companyId)->with('customer', 'firm', 'creator', 'items.product');
 
         if (auth()->user()->role === 'sales_admin') {
             $query->where('created_by', auth()->id());
@@ -461,6 +505,9 @@ class SalesOrderController extends Controller
         }
         if ($request->filled('customer_id')) {
             $query->where('customer_id', $request->customer_id);
+        }
+        if ($request->filled('firm_id')) {
+            $query->where('firm_id', $request->firm_id);
         }
         if ($request->filled('from')) {
             $query->whereDate('created_at', '>=', $request->from);
@@ -474,26 +521,64 @@ class SalesOrderController extends Controller
         $filename = 'sales_orders_' . date('Ymd_His') . '.csv';
 
         $headers = [
-            'Content-Type'        => 'text/csv',
+            'Content-Type'        => 'text/csv; charset=UTF-8',
             'Content-Disposition' => "attachment; filename=\"{$filename}\"",
         ];
 
         $callback = function () use ($orders) {
             $handle = fopen('php://output', 'w');
-            fputcsv($handle, ['Order #', 'Date', 'Customer', 'Product', 'Qty', 'Rate (₹)', 'Line Total (₹)', 'Order Total (₹)', 'Paid (₹)', 'Pending (₹)', 'Status', 'Created By']);
+            fwrite($handle, "\xEF\xBB\xBF");
+
+            fputcsv($handle, [
+                'Order #',
+                'Date',
+                'Firm',
+                'Customer',
+                'Product',
+                'Qty',
+                'Rate (Rs)',
+                'Line Total (Rs)',
+                'Sub Total (Rs)',
+                'GST Rate (%)',
+                'GST (Rs)',
+                'Discount (Rs)',
+                'Grand Total (Rs)',
+                'Paid (Rs)',
+                'Pending (Rs)',
+                'Status',
+                'Receiving Ok',
+                'Created By',
+            ]);
 
             foreach ($orders as $order) {
+                $subtotal = (float) ($order->subtotal > 0 ? $order->subtotal : $order->items->sum('total'));
+                $gstRate = $order->gst_rate === null ? 18 : (int) $order->gst_rate;
+                $gstAmount = $gstRate === 0
+                    ? 0.0
+                    : (float) ($order->gst_amount > 0 ? $order->gst_amount : round($subtotal * $gstRate / 100, 2));
+                $discount = (float) ($order->discount_amount ?? 0);
+                $receivingOk = $order->receiving_ok ? 'Receiving Ok' : 'Pending';
+
                 $items = $order->items;
                 if ($items->isEmpty()) {
                     fputcsv($handle, [
                         $order->id,
                         $order->created_at->format('d-m-Y'),
+                        $order->firm?->name ?? '-',
                         $order->customer?->name ?? '-',
-                        '-', '', '', '',
+                        '-',
+                        '',
+                        '',
+                        '',
+                        number_format($subtotal, 2),
+                        $gstRate,
+                        number_format($gstAmount, 2),
+                        number_format($discount, 2),
                         number_format($order->total_amount, 2),
                         number_format($order->paid_amount, 2),
                         number_format($order->pending_amount, 2),
-                        ucfirst($order->status),
+                        $order->statusLabel(),
+                        $receivingOk,
                         $order->creator?->name ?? '-',
                     ]);
                 } else {
@@ -501,15 +586,21 @@ class SalesOrderController extends Controller
                         fputcsv($handle, [
                             $order->id,
                             $order->created_at->format('d-m-Y'),
+                            $i === 0 ? ($order->firm?->name ?? '-') : '',
                             $order->customer?->name ?? '-',
                             $item->product?->name ?? '-',
                             $item->quantity,
                             number_format($item->price, 2),
                             number_format($item->total, 2),
+                            $i === 0 ? number_format($subtotal, 2) : '',
+                            $i === 0 ? $gstRate : '',
+                            $i === 0 ? number_format($gstAmount, 2) : '',
+                            $i === 0 ? number_format($discount, 2) : '',
                             $i === 0 ? number_format($order->total_amount, 2) : '',
                             $i === 0 ? number_format($order->paid_amount, 2) : '',
                             $i === 0 ? number_format($order->pending_amount, 2) : '',
-                            $i === 0 ? ucfirst($order->status) : '',
+                            $i === 0 ? $order->statusLabel() : '',
+                            $i === 0 ? $receivingOk : '',
                             $i === 0 ? ($order->creator?->name ?? '-') : '',
                         ]);
                     }
@@ -559,5 +650,39 @@ class SalesOrderController extends Controller
         if (auth()->user()->isSalesAdmin()) {
             abort_unless($order->created_by === auth()->id(), 403);
         }
+    }
+
+    private function activeFirmsForCompany(int $companyId)
+    {
+        return Firm::where('company_id', $companyId)->active()->orderBy('name')->get();
+    }
+
+    private function firmsForOrderForm(int $companyId, ?int $currentFirmId = null)
+    {
+        return Firm::where('company_id', $companyId)
+            ->where(function ($query) use ($currentFirmId) {
+                $query->where('status', 'active');
+                if ($currentFirmId) {
+                    $query->orWhere('id', $currentFirmId);
+                }
+            })
+            ->orderBy('name')
+            ->get();
+    }
+
+    private function firmValidationRule(int $companyId, ?int $currentFirmId = null): array
+    {
+        return [
+            'required',
+            Rule::exists('firms', 'id')->where(function ($query) use ($companyId, $currentFirmId) {
+                $query->where('company_id', $companyId)
+                    ->where(function ($statusQuery) use ($currentFirmId) {
+                        $statusQuery->where('status', 'active');
+                        if ($currentFirmId) {
+                            $statusQuery->orWhere('id', $currentFirmId);
+                        }
+                    });
+            }),
+        ];
     }
 }

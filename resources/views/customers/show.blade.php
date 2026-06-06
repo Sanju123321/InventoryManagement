@@ -120,7 +120,7 @@
                                                     'pending'   => 'bg-warning text-dark',
                                                     'approved'  => 'bg-info',
                                                     'rejected'  => 'bg-danger',
-                                                    'delivered' => 'bg-primary',
+                                                    'dispatched' => 'bg-primary',
                                                     'paid'      => 'bg-success',
                                                     default     => 'bg-secondary',
                                                 };

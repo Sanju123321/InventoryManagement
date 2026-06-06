@@ -90,11 +90,11 @@ class ProductCostController extends Controller
             $totalProduced = ProductionLog::where('company_id', $companyId)->where('product_id', $product->id)->sum('quantity_produced');
 
             $totalSold = SalesOrderItem::whereHas('salesOrder', function ($q) use ($companyId) {
-                $q->where('company_id', $companyId)->whereIn('status', ['approved', 'delivered', 'paid']);
+                $q->where('company_id', $companyId)->whereIn('status', ['approved', 'dispatched', 'paid']);
             })->where('product_id', $product->id)->sum('quantity');
 
             $totalRevenue = SalesOrderItem::whereHas('salesOrder', function ($q) use ($companyId) {
-                $q->where('company_id', $companyId)->whereIn('status', ['approved', 'delivered', 'paid']);
+                $q->where('company_id', $companyId)->whereIn('status', ['approved', 'dispatched', 'paid']);
             })->where('product_id', $product->id)->sum('total');
 
             $availableStock = $totalProduced - $totalSold;

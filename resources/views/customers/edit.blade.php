@@ -47,6 +47,9 @@
                     </div>
                 </div>
                 <div class="row mb-3">
+                    @include('customers.partials.google-location-field', ['customer' => $customer])
+                </div>
+                <div class="row mb-3">
                     <div class="col-md-6">
                         <label for="contact_details" class="form-label">Contact Number <span class="text-danger">*</span></label>
                         <input type="tel" class="form-control @error('contact_details') is-invalid @enderror" id="contact_details" name="contact_details"
@@ -78,4 +81,8 @@
             </form>
         </div>
     </div>
+@endsection
+
+@section('scripts')
+    @include('customers.partials.google-location-scripts')
 @endsection

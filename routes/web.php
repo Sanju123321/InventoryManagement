@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\FcmController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\AppNotificationController;
 use App\Http\Controllers\UserRoleController;
+use App\Http\Controllers\FirmController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ImpersonateController;
 use App\Http\Controllers\ActivityLogController;
@@ -124,7 +125,9 @@ Route::middleware(['auth.admin', 'check.status'])->group(function () {
         // Order approval — admin only
         Route::patch('/sales/orders/{order}/approve', [SalesOrderController::class, 'approve']);
         Route::patch('/sales/orders/{order}/reject', [SalesOrderController::class, 'reject']);
-        Route::patch('/sales/orders/{order}/deliver', [SalesOrderController::class, 'markDelivered']);
+        Route::patch('/sales/orders/{order}/dispatch', [SalesOrderController::class, 'markDispatched']);
+        Route::patch('/sales/orders/{order}/receiving-ok', [SalesOrderController::class, 'markReceivingOk'])->name('sales.orders.receiving-ok');
+        Route::delete('/sales/orders/{order}', [SalesOrderController::class, 'destroy'])->name('sales.orders.destroy');
         Route::patch('/sales/orders/{order}/notes', [SalesOrderController::class, 'updateNotes']);
         Route::patch('/sales/orders/{order}/driver', [SalesOrderController::class, 'updateDriver']);
         Route::post('/sales/orders/{order}/invoice', [SalesOrderController::class, 'uploadInvoice'])->name('sales.orders.invoice.upload');
@@ -141,6 +144,8 @@ Route::middleware(['auth.admin', 'check.status'])->group(function () {
         Route::put('/users/{user}', [UserRoleController::class, 'update'])->name('users.update');
         Route::delete('/users/{user}', [UserRoleController::class, 'destroy'])->name('users.destroy');
         Route::post('/users/{user}/reset-password', [UserRoleController::class, 'resetPassword'])->name('users.reset-password');
+
+        Route::resource('/firms', FirmController::class)->except(['show']);
 
         // FCM manual broadcast (admin only)
         Route::post('/notify/user/{user}', [NotificationController::class, 'notifyUser'])->name('notify.user');

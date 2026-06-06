@@ -5,13 +5,17 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class SalesOrder extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
-        'company_id', 'customer_id', 'subtotal', 'gst_rate', 'gst_amount', 'discount_amount',
+        'company_id', 'customer_id', 'firm_id', 'subtotal', 'gst_rate', 'gst_amount', 'discount_amount',
         'total_amount', 'paid_amount', 'pending_amount', 'status', 'created_by', 'approved_by',
         'notes', 'driver_name', 'driver_whatsapp', 'driver_vehicle', 'delivery_date', 'invoice_path',
+        'receiving_ok', 'receiving_ok_at',
     ];
 
     protected $casts = [
@@ -21,6 +25,8 @@ class SalesOrder extends Model
         'total_amount' => 'decimal:2',
         'paid_amount' => 'decimal:2',
         'pending_amount' => 'decimal:2',
+        'receiving_ok' => 'boolean',
+        'receiving_ok_at' => 'datetime',
     ];
 
     public function company(): BelongsTo
@@ -31,6 +37,11 @@ class SalesOrder extends Model
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    public function firm(): BelongsTo
+    {
+        return $this->belongsTo(Firm::class);
     }
 
     public function items(): HasMany
@@ -63,18 +74,31 @@ class SalesOrder extends Model
         return $this->status === 'paid' ? 'approved' : $this->status;
     }
 
-    public function canMarkDelivered(): bool
+    public function statusLabel(): string
+    {
+        return match ($this->status) {
+            'dispatched' => 'Dispatched',
+            default => ucfirst($this->status),
+        };
+    }
+
+    public function canMarkDispatched(): bool
     {
         return in_array($this->status, ['approved', 'paid'], true);
     }
 
     public function canAssignDriver(): bool
     {
-        return in_array($this->status, ['approved', 'delivered', 'paid'], true);
+        return in_array($this->status, ['approved', 'dispatched', 'paid'], true);
     }
 
-    public function isDelivered(): bool
+    public function isDispatched(): bool
     {
-        return $this->status === 'delivered';
+        return $this->status === 'dispatched';
+    }
+
+    public function canMarkReceivingOk(): bool
+    {
+        return $this->isDispatched() && $this->invoice_path && ! $this->receiving_ok;
     }
 }

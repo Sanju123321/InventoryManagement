@@ -49,7 +49,7 @@ class SuperAdminAnalyticsController extends Controller
                 DB::raw('SUM(total_amount) as revenue'),
                 DB::raw('COUNT(*) as order_count')
             )
-            ->whereIn('status', ['approved', 'delivered', 'paid'])
+            ->whereIn('status', ['approved', 'dispatched', 'paid'])
             ->groupBy('company_id')
             ->orderByDesc('revenue')
             ->limit(10)
@@ -70,7 +70,7 @@ class SuperAdminAnalyticsController extends Controller
                 DB::raw("DATE_FORMAT(created_at, '%Y-%m') as month"),
                 DB::raw('SUM(total_amount) as revenue')
             )
-            ->whereIn('status', ['approved', 'delivered', 'paid'])
+            ->whereIn('status', ['approved', 'dispatched', 'paid'])
             ->where('created_at', '>=', $now->copy()->subMonths(5)->startOfMonth())
             ->groupBy('month')
             ->orderBy('month')
@@ -125,7 +125,7 @@ class SuperAdminAnalyticsController extends Controller
         $kpi = [
             'total_companies'  => Company::count(),
             'active_companies' => Company::where('status', 'active')->count(),
-            'total_revenue'    => SalesOrder::whereIn('status', ['approved', 'delivered', 'paid'])->sum('total_amount'),
+            'total_revenue'    => SalesOrder::whereIn('status', ['approved', 'dispatched', 'paid'])->sum('total_amount'),
             'pending_revenue'  => SalesOrder::where('status', 'pending')->sum('total_amount'),
             'total_production' => ProductionLog::sum('quantity_produced'),
             'total_low_stock'  => RawMaterial::whereColumn('stock_qty', '<=', 'min_stock_alert')->count(),
