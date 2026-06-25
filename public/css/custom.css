@@ -496,7 +496,8 @@ canvas {
   }
 
   /* Tables inside card-body: ensure scrollable */
-  .card-body {
+  .card-body.p-0,
+  .card-body:has(.table-responsive) {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
@@ -820,7 +821,7 @@ canvas {
   }
 
   .dash-kpi-card .card-body .fa-2x {
-    display: none;
+    font-size: 1.2em !important;
   }
 
   .dash-kpi-card .card-body .fs-4 {

@@ -10,9 +10,9 @@
         </ol>
     </div>
 
-    <div class="row g-3 mb-4">
-        <div class="col-6 col-md-6 col-lg-3">
-            <div class="card dash-kpi-card bg-primary text-white mb-4">
+    <div class="row row-cols-2 row-cols-lg-4 g-3 mb-4">
+        <div class="col">
+            <div class="card dash-kpi-card bg-primary text-white h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
@@ -28,8 +28,8 @@
                 </div>
             </div>
         </div>
-        <div class="col-6 col-md-6 col-lg-3">
-            <div class="card dash-kpi-card bg-success text-white mb-4">
+        <div class="col">
+            <div class="card dash-kpi-card bg-success text-white h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
@@ -41,8 +41,8 @@
                 </div>
             </div>
         </div>
-        <div class="col-6 col-md-6 col-lg-3">
-            <div class="card dash-kpi-card bg-danger text-white mb-4">
+        <div class="col">
+            <div class="card dash-kpi-card bg-danger text-white h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
@@ -54,8 +54,8 @@
                 </div>
             </div>
         </div>
-        <div class="col-6 col-md-6 col-lg-3">
-            <div class="card dash-kpi-card bg-warning text-white mb-4">
+        <div class="col">
+            <div class="card dash-kpi-card bg-warning text-white h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>

@@ -3,15 +3,10 @@
 @section('title', 'Dashboard - Kemtex ERP')
 
 @section('content')
-    <div class="page-header mt-4 mb-4">
-        <h1 class="mb-1">Dashboard</h1>
-        <ol class="breadcrumb mb-0">
-            <li class="breadcrumb-item active">Dashboard</li>
-        </ol>
-    </div>
+    <x-page-header title="Dashboard" :breadcrumbs="[['label' => 'Dashboard']]" />
 
-    <div class="row g-3 mb-4">
-        <div class="col-6 col-md-6 col-lg-3">
+    <div class="row row-cols-2 row-cols-lg-4 g-3 mb-4">
+        <div class="col">
             <div class="card dash-kpi-card bg-primary text-white h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
@@ -28,7 +23,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-6 col-md-6 col-lg-3">
+        <div class="col">
             <div class="card dash-kpi-card bg-warning text-white h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
@@ -45,7 +40,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-6 col-md-6 col-lg-3">
+        <div class="col">
             <div class="card dash-kpi-card bg-success text-white h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
@@ -62,7 +57,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-6 col-md-6 col-lg-3">
+        <div class="col">
             <div class="card dash-kpi-card bg-danger text-white h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">

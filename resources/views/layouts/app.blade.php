@@ -186,7 +186,7 @@
         @include('layouts.sidebar')
         <div id="layoutSidenav_content">
             <main>
-                <div class="container-fluid px-4">
+                <div class="container-fluid px-4 app-main">
                     @include('components.flash-message')
                     @yield('content')
                 </div>
