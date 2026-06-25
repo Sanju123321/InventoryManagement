@@ -10929,9 +10929,41 @@ body {
 .sb-nav-fixed #layoutSidenav #layoutSidenav_nav .sb-sidenav .sb-sidenav-menu {
   overflow-y: auto;
 }
-.sb-nav-fixed #layoutSidenav #layoutSidenav_content {
-  padding-left: 225px;
-  top: 56px;
+@media (min-width: 992px) {
+  .sb-nav-fixed #layoutSidenav #layoutSidenav_content {
+    padding-left: 225px;
+    top: 56px;
+  }
+}
+@media (max-width: 991.98px) {
+  #layoutSidenav {
+    display: block !important;
+  }
+  #layoutSidenav #layoutSidenav_nav,
+  .sb-nav-fixed #layoutSidenav #layoutSidenav_nav {
+    position: fixed !important;
+    top: 56px;
+    left: 0;
+    width: min(280px, 85vw) !important;
+    flex-basis: auto !important;
+    height: calc(100dvh - 56px);
+    transform: translateX(-100%) !important;
+    z-index: 1040;
+  }
+  .sb-sidenav-toggled #layoutSidenav #layoutSidenav_nav {
+    transform: translateX(0) !important;
+  }
+  #layoutSidenav #layoutSidenav_content,
+  .sb-nav-fixed #layoutSidenav #layoutSidenav_content {
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: none !important;
+  }
+  .sb-topnav .navbar-brand {
+    width: auto !important;
+  }
 }
 
 #layoutError {

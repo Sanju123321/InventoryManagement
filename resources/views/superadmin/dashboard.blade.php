@@ -12,7 +12,7 @@
 
     <div class="row g-3 mb-4">
         <div class="col-6 col-md-6 col-lg-3">
-            <div class="card bg-primary text-white mb-4">
+            <div class="card dash-kpi-card bg-primary text-white mb-4">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
@@ -29,7 +29,7 @@
             </div>
         </div>
         <div class="col-6 col-md-6 col-lg-3">
-            <div class="card bg-success text-white mb-4">
+            <div class="card dash-kpi-card bg-success text-white mb-4">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
@@ -42,7 +42,7 @@
             </div>
         </div>
         <div class="col-6 col-md-6 col-lg-3">
-            <div class="card bg-danger text-white mb-4">
+            <div class="card dash-kpi-card bg-danger text-white mb-4">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
@@ -55,7 +55,7 @@
             </div>
         </div>
         <div class="col-6 col-md-6 col-lg-3">
-            <div class="card bg-warning text-white mb-4">
+            <div class="card dash-kpi-card bg-warning text-white mb-4">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>

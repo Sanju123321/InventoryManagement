@@ -73,6 +73,50 @@
     </script>
 
     @yield('styles')
+
+    {{-- Critical mobile layout: full-width content on phones (iPhone 16 Pro = 393px) --}}
+    <style>
+        @media (max-width: 991.98px) {
+            body.sb-nav-fixed #layoutSidenav {
+                display: block !important;
+                width: 100% !important;
+            }
+
+            body.sb-nav-fixed #layoutSidenav #layoutSidenav_nav {
+                position: fixed !important;
+                top: 56px;
+                left: 0;
+                width: min(280px, 85vw) !important;
+                max-width: 280px;
+                flex-basis: 0 !important;
+                transform: translateX(-100%) !important;
+                z-index: 1040;
+            }
+
+            body.sb-nav-fixed.sb-sidenav-toggled #layoutSidenav #layoutSidenav_nav {
+                transform: translateX(0) !important;
+            }
+
+            body.sb-nav-fixed #layoutSidenav #layoutSidenav_content {
+                margin-left: 0 !important;
+                padding-left: 0 !important;
+                width: 100% !important;
+                max-width: 100vw !important;
+                flex: none !important;
+            }
+
+            body.sb-nav-fixed #layoutSidenav #layoutSidenav_content main,
+            body.sb-nav-fixed #layoutSidenav #layoutSidenav_content .container-fluid {
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+
+            body.sb-nav-fixed .sb-topnav .navbar-brand {
+                width: auto !important;
+                max-width: 50vw;
+            }
+        }
+    </style>
 </head>
 
 <body class="sb-nav-fixed">
