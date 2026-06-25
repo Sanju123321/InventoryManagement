@@ -23,7 +23,7 @@
         @endif
 
         <div class="row justify-content-center">
-            <div class="col-lg-7">
+            <div class="col-12 col-lg-7">
 
                 {{-- Edit details --}}
                 <div class="card shadow-sm mb-4">
@@ -64,7 +64,7 @@
                             </div>
 
                             <div class="row g-3 mb-4">
-                                <div class="col-md-6">
+                                <div class="col-12 col-md-6">
                                     <label class="form-label fw-semibold">Role</label>
                                     <select name="role" class="form-select @error('role') is-invalid @enderror" required>
                                         @foreach ($roles as $role)
@@ -78,7 +78,7 @@
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-12 col-md-6">
                                     <label class="form-label fw-semibold">Status</label>
                                     <select name="status" class="form-select @error('status') is-invalid @enderror"
                                         required>
@@ -115,11 +115,11 @@
                         <form method="POST" action="{{ route('users.reset-password', $user) }}">
                             @csrf
                             <div class="row g-3">
-                                <div class="col-md-6">
+                                <div class="col-12 col-md-6">
                                     <label class="form-label fw-semibold">New Password</label>
                                     <input type="password" name="password" class="form-control" required minlength="8">
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-12 col-md-6">
                                     <label class="form-label fw-semibold">Confirm Password</label>
                                     <input type="password" name="password_confirmation" class="form-control" required
                                         minlength="8">

@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('title', 'System Health')
 
@@ -109,7 +109,7 @@
 
     {{-- â”€â”€ Row: Disk Usage + System Info â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ --}}
     <div class="row g-3 mb-4">
-        <div class="col-md-6 col-xl-4">
+        <div class="col-12 col-md-6 col-xl-4">
             <div class="card shadow-sm h-100">
                 <div class="card-header fw-semibold">
                     <i class="fas fa-hdd me-1 text-secondary"></i> Disk Usage
@@ -140,7 +140,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-6 col-xl-4">
+        <div class="col-12 col-md-6 col-xl-4">
             <div class="card shadow-sm h-100">
                 <div class="card-header fw-semibold">
                     <i class="fas fa-info-circle me-1 text-info"></i> System Info
@@ -166,7 +166,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-6 col-xl-4">
+        <div class="col-12 col-md-6 col-xl-4">
             <div class="card shadow-sm h-100">
                 <div class="card-header fw-semibold">
                     <i class="fas fa-tasks me-1 text-warning"></i> Recent Failed Jobs

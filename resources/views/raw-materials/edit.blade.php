@@ -24,7 +24,7 @@
                 @csrf
                 @method('PUT')
                 <div class="row mb-3">
-                    <div class="col-md-4">
+                    <div class="col-12 col-md-4">
                         <label for="name" class="form-label">Material Name <span class="text-danger">*</span></label>
                         <input type="text" class="form-control @error('name') is-invalid @enderror" id="name"
                             name="name" value="{{ old('name', $rawMaterial->name) }}" required maxlength="255">
@@ -32,7 +32,7 @@
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-12 col-md-4">
                         <label for="unit" class="form-label">Unit <span class="text-danger">*</span></label>
                         @php
                             $currentUnit = old('unit', $rawMaterial->custom_unit ? 'Other' : $rawMaterial->unit);
@@ -57,7 +57,7 @@
                             <div class="invalid-feedback d-block">{{ $message }}</div>
                         @enderror
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-12 col-md-4">
                         <label for="stock_qty" class="form-label">Stock Qty <span class="text-danger">*</span></label>
                         <input type="number" step="0.01" class="form-control @error('stock_qty') is-invalid @enderror"
                             id="stock_qty" name="stock_qty" value="{{ old('stock_qty', $rawMaterial->stock_qty) }}"
@@ -68,7 +68,7 @@
                     </div>
                 </div>
                 <div class="row mb-3">
-                    <div class="col-md-6">
+                    <div class="col-12 col-md-6">
                         <label for="min_stock_alert" class="form-label">Min Stock Alert Level</label>
                         <input type="number" step="0.01"
                             class="form-control @error('min_stock_alert') is-invalid @enderror" id="min_stock_alert"
@@ -78,7 +78,7 @@
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-12 col-md-6">
                         <label for="unit_cost" class="form-label">Unit Cost (₹)</label>
                         <input type="number" step="0.01" class="form-control @error('unit_cost') is-invalid @enderror"
                             id="unit_cost" name="unit_cost" value="{{ old('unit_cost', $rawMaterial->unit_cost) }}"

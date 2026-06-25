@@ -11,7 +11,7 @@
     </ol>
 
     <div class="row">
-        <div class="col-lg-6">
+        <div class="col-12 col-lg-6">
             <div class="card shadow-sm">
                 <div class="card-header bg-warning text-dark">
                     <i class="fas fa-edit me-2"></i>Edit Company
@@ -109,7 +109,7 @@
             </div>
         </div>
 
-        <div class="col-lg-6">
+        <div class="col-12 col-lg-6">
             <div class="card shadow-sm border-danger">
                 <div class="card-header bg-danger text-white">
                     <i class="fas fa-trash me-2"></i>Delete Company

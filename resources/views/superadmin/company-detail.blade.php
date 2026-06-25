@@ -11,7 +11,7 @@
     </ol>
 
     <div class="row">
-        <div class="col-md-6">
+        <div class="col-12 col-md-6">
             <div class="card mb-4">
                 <div class="card-header"><i class="fas fa-building me-1"></i> Company Info</div>
                 <div class="card-body p-0">
@@ -108,7 +108,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-6">
+            <div class="col-12 col-md-6">
                 <div class="card mb-4">
                     <div class="card-header"><i class="fas fa-chart-bar me-1"></i> Statistics & Plan Usage</div>
                     <div class="card-body">

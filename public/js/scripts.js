@@ -34,6 +34,10 @@ window.addEventListener("DOMContentLoaded", (event) => {
           document.body.classList.contains("sb-sidenav-toggled"),
         );
       }
+
+      if (typeof kemtexFixMobileLayout === "function") {
+        setTimeout(kemtexFixMobileLayout, 0);
+      }
     });
   }
 

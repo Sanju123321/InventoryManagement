@@ -11,7 +11,7 @@
     </ol>
 
     <div class="row">
-        <div class="col-md-6">
+        <div class="col-12 col-md-6">
             <div class="card mb-4">
                 <div class="card-header"><i class="fas fa-industry me-1"></i> Production Summary</div>
                 <div class="card-body p-0">
@@ -38,7 +38,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-6">
+        <div class="col-12 col-md-6">
             <div class="card mb-4 border-info">
                 <div class="card-header bg-info text-white"><i class="fas fa-calculator me-1"></i> Production Cost</div>
                 <div class="card-body p-0">

@@ -141,7 +141,7 @@
             <div class="card-body">
                 <div class="row g-3">
                     @foreach ($roles as $role)
-                        <div class="col-md-4">
+                        <div class="col-12 col-md-4">
                             <div class="border rounded p-3 h-100">
                                 <div class="fw-bold mb-2">{{ $role->name }}</div>
                                 <ul class="list-unstyled mb-0 small text-muted">

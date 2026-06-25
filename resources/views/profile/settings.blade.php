@@ -11,7 +11,7 @@
 
     <div class="row">
         {{-- ── Update Profile ────────────────────────────────────────────── --}}
-        <div class="col-lg-6 mb-4">
+        <div class="col-12 col-lg-6 mb-4">
             <div class="card shadow-sm">
                 <div class="card-header bg-primary text-white">
                     <i class="fas fa-user-edit me-2"></i>Update Profile
@@ -74,7 +74,7 @@
         </div>
 
         {{-- ── Change Password ───────────────────────────────────────────── --}}
-        <div class="col-lg-6 mb-4">
+        <div class="col-12 col-lg-6 mb-4">
             <div class="card shadow-sm">
                 <div class="card-header bg-secondary text-white">
                     <i class="fas fa-lock me-2"></i>Change Password

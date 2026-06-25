@@ -26,7 +26,7 @@
             <form method="POST" action="{{ url('/inventory') }}">
                 @csrf
                 <div class="row mb-3">
-                    <div class="col-md-6">
+                    <div class="col-12 col-md-6">
                         <label for="material_id" class="form-label">Raw Material</label>
                         <select class="form-select" id="material_id" name="material_id" required>
                             <option value="" disabled selected>Select material</option>
@@ -38,7 +38,7 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-12 col-md-6">
                         <label for="type" class="form-label">Transaction Type</label>
                         <select class="form-select" id="type" name="type" required>
                             <option value="in" {{ old('type') == 'in' ? 'selected' : '' }}>Stock In (Received)</option>
@@ -48,7 +48,7 @@
                     </div>
                 </div>
                 <div class="row mb-3">
-                    <div class="col-md-6">
+                    <div class="col-12 col-md-6">
                         <label for="quantity" class="form-label">Quantity</label>
                         <input type="number" class="form-control" id="quantity" name="quantity"
                             value="{{ old('quantity') }}" step="0.01" min="0.01" required>

@@ -23,7 +23,7 @@
             <form method="POST" action="{{ url('/bom') }}" id="bomForm">
                 @csrf
                 <div class="row mb-3">
-                    <div class="col-md-4">
+                    <div class="col-12 col-md-4">
                         <label for="product_id" class="form-label">Product</label>
                         <select class="form-select" id="product_id" name="product_id" required>
                             <option value="">Select Product</option>

@@ -70,7 +70,7 @@
 
     <div class="row g-3 mb-4">
         {{-- Customer Info --}}
-        <div class="col-md-4">
+        <div class="col-12 col-md-4">
             <div class="card shadow-sm h-100">
                 <div class="card-header"><i class="fas fa-user me-1"></i> Customer Info</div>
                 <div class="card-body small">
@@ -87,7 +87,7 @@
         </div>
 
         {{-- Orders Summary --}}
-        <div class="col-md-8">
+        <div class="col-12 col-md-8">
             <div class="card shadow-sm h-100">
                 <div class="card-header"><i class="fas fa-file-invoice me-1"></i> Orders Summary</div>
                 <div class="card-body p-0">

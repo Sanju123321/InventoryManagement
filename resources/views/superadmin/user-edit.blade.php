@@ -11,7 +11,7 @@
     </ol>
 
     <div class="row">
-        <div class="col-lg-7 mb-4">
+        <div class="col-12 col-lg-7 mb-4">
             <div class="card shadow-sm">
                 <div class="card-header bg-warning text-dark">
                     <i class="fas fa-user-edit me-2"></i>Edit User
@@ -40,7 +40,7 @@
                         </div>
 
                         <div class="row">
-                            <div class="col-md-6 mb-3">
+                            <div class="col-12 col-md-6 mb-3">
                                 <label for="name" class="form-label fw-semibold">Full Name <span
                                         class="text-danger">*</span></label>
                                 <input type="text" name="name" id="name"
@@ -50,7 +50,7 @@
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
-                            <div class="col-md-6 mb-3">
+                            <div class="col-12 col-md-6 mb-3">
                                 <label for="phone_number" class="form-label fw-semibold">Phone</label>
                                 <input type="text" name="phone_number" id="phone_number"
                                     class="form-control @error('phone_number') is-invalid @enderror"
@@ -73,7 +73,7 @@
                         </div>
 
                         <div class="row">
-                            <div class="col-md-6 mb-3">
+                            <div class="col-12 col-md-6 mb-3">
                                 <label for="role" class="form-label fw-semibold">Role <span
                                         class="text-danger">*</span></label>
                                 <select name="role" id="role"
@@ -91,7 +91,7 @@
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
-                            <div class="col-md-6 mb-3">
+                            <div class="col-12 col-md-6 mb-3">
                                 <label for="status" class="form-label fw-semibold">Status <span
                                         class="text-danger">*</span></label>
                                 <select name="status" id="status"
@@ -120,7 +120,7 @@
             </div>
         </div>
 
-        <div class="col-lg-5 mb-4">
+        <div class="col-12 col-lg-5 mb-4">
             <div class="card shadow-sm border-danger">
                 <div class="card-header bg-danger text-white">
                     <i class="fas fa-trash me-2"></i>Delete User

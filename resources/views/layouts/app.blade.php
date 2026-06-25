@@ -38,6 +38,7 @@
     <link href="https://cdn.jsdelivr.net/npm/simple-datatables@7.1.2/dist/style.min.css" rel="stylesheet" />
     <link href="{{ asset('css/styles.css') }}?v={{ @filemtime(public_path('css/styles.css')) }}" rel="stylesheet" />
     <link href="{{ asset('css/custom.css') }}?v={{ @filemtime(public_path('css/custom.css')) }}" rel="stylesheet" />
+    <link href="{{ asset('css/mobile.css') }}?v={{ @filemtime(public_path('css/mobile.css')) }}" rel="stylesheet" />
     <script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous" defer></script>
 
     {{-- Google Analytics GA4 --}}
@@ -120,6 +121,32 @@
 </head>
 
 <body class="sb-nav-fixed">
+    <script>
+        /* Immediate mobile layout fix — runs before paint when possible */
+        function kemtexFixMobileLayout() {
+            if (window.innerWidth >= 992) return;
+            var sidenav = document.getElementById('layoutSidenav');
+            var content = document.getElementById('layoutSidenav_content');
+            var nav = document.getElementById('layoutSidenav_nav');
+            if (sidenav) sidenav.style.setProperty('display', 'block', 'important');
+            if (nav) {
+                nav.style.setProperty('position', 'fixed', 'important');
+                nav.style.setProperty('transform', document.body.classList.contains('sb-sidenav-toggled') ?
+                    'translateX(0)' : 'translateX(-100%)', 'important');
+            }
+            if (content) {
+                content.style.setProperty('margin-left', '0', 'important');
+                content.style.setProperty('padding-left', '0', 'important');
+                content.style.setProperty('width', '100%', 'important');
+                content.style.setProperty('max-width', '100vw', 'important');
+            }
+        }
+        (function() {
+            kemtexFixMobileLayout();
+            document.addEventListener('DOMContentLoaded', kemtexFixMobileLayout);
+            window.addEventListener('resize', kemtexFixMobileLayout);
+        })();
+    </script>
     <div id="pageLoaderOverlay"
         style="position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:20000;background:rgba(15,23,42,.55);backdrop-filter:blur(2px);">
         <div

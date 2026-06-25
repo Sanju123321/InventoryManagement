@@ -11,7 +11,7 @@
     </ol>
 
     <div class="row">
-        <div class="col-lg-6">
+        <div class="col-12 col-lg-6">
             <div class="card shadow-sm">
                 <div class="card-header bg-primary text-white">
                     <i class="fas fa-building me-2"></i>New Company

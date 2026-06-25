@@ -24,25 +24,25 @@
                 @csrf
                 @method('PUT')
                 <div class="row mb-3">
-                    <div class="col-md-4">
+                    <div class="col-12 col-md-4">
                         <label class="form-label">Product</label>
                         <div class="form-control bg-light">{{ $productCost->product->name }}
                             ({{ $productCost->product->sku }})</div>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-12 col-md-4">
                         <label for="production_cost" class="form-label">Production Cost (₹)</label>
                         <input type="number" step="0.01" class="form-control" id="production_cost"
                             name="production_cost" value="{{ old('production_cost', $productCost->production_cost) }}"
                             required>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-12 col-md-4">
                         <label for="selling_price" class="form-label">Selling Price (₹)</label>
                         <input type="number" step="0.01" class="form-control" id="selling_price" name="selling_price"
                             value="{{ old('selling_price', $productCost->selling_price) }}" required>
                     </div>
                 </div>
                 <div class="row mb-3">
-                    <div class="col-md-4">
+                    <div class="col-12 col-md-4">
                         <label class="form-label">Profit / Unit</label>
                         <div class="form-control bg-light" id="profitPreview">₹0.00</div>
                     </div>

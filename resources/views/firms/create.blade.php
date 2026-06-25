@@ -23,13 +23,13 @@
             <form method="POST" action="{{ route('firms.store') }}">
                 @csrf
                 <div class="row mb-3">
-                    <div class="col-md-6">
+                    <div class="col-12 col-md-6">
                         <label for="name" class="form-label">Name <span class="text-danger">*</span></label>
                         <input type="text" class="form-control @error('name') is-invalid @enderror" id="name"
                             name="name" value="{{ old('name') }}" required>
                         @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-12 col-md-6">
                         <label for="gst" class="form-label">GST</label>
                         <input type="text" class="form-control @error('gst') is-invalid @enderror" id="gst"
                             name="gst" value="{{ old('gst') }}" placeholder="e.g. 22AAAAA0000A1Z5">
@@ -37,14 +37,14 @@
                     </div>
                 </div>
                 <div class="row mb-3">
-                    <div class="col-md-6">
+                    <div class="col-12 col-md-6">
                         <label for="mobile_number" class="form-label">Mobile Number</label>
                         <input type="text" class="form-control @error('mobile_number') is-invalid @enderror"
                             id="mobile_number" name="mobile_number" value="{{ old('mobile_number') }}"
                             maxlength="20">
                         @error('mobile_number')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-12 col-md-6">
                         <label for="status" class="form-label">Status <span class="text-danger">*</span></label>
                         <select class="form-control @error('status') is-invalid @enderror" id="status" name="status"
                             required>

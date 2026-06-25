@@ -23,7 +23,7 @@
             <form method="POST" action="{{ url('/products') }}">
                 @csrf
                 <div class="row mb-3">
-                    <div class="col-md-6">
+                    <div class="col-12 col-md-6">
                         <label for="name" class="form-label">Product Name <span class="text-danger">*</span></label>
                         <input type="text" class="form-control @error('name') is-invalid @enderror" id="name"
                             name="name" value="{{ old('name') }}" required maxlength="255">
@@ -31,7 +31,7 @@
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-12 col-md-6">
                         <label for="sku" class="form-label">SKU <span class="text-danger">*</span></label>
                         <input type="text" class="form-control @error('sku') is-invalid @enderror" id="sku"
                             name="sku" value="{{ old('sku') }}" required maxlength="100">
@@ -41,7 +41,7 @@
                     </div>
                 </div>
                 <div class="row mb-3">
-                    <div class="col-md-6">
+                    <div class="col-12 col-md-6">
                         <label for="category_id" class="form-label">Category <span class="text-danger">*</span></label>
                         <select class="form-control @error('category_id') is-invalid @enderror" id="category_id"
                             name="category_id" required>
@@ -60,7 +60,7 @@
                             <a href="{{ url('/product-categories/create') }}">Add new category</a>
                         </small>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-12 col-md-6">
                         <label for="unit" class="form-label">Unit <span class="text-danger">*</span></label>
                         <select class="form-control @error('unit') is-invalid @enderror" id="unit" name="unit"
                             required>

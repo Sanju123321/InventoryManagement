@@ -23,7 +23,7 @@
             <form method="POST" action="{{ url('/sales/product-costs') }}">
                 @csrf
                 <div class="row mb-3">
-                    <div class="col-md-4">
+                    <div class="col-12 col-md-4">
                         <label for="product_id" class="form-label">Product</label>
                         <select class="form-control" id="product_id" name="product_id" required>
                             <option value="">Select Product</option>
@@ -35,19 +35,19 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-12 col-md-4">
                         <label for="production_cost" class="form-label">Production Cost (₹)</label>
                         <input type="number" step="0.01" class="form-control" id="production_cost"
                             name="production_cost" value="{{ old('production_cost', 0) }}" required>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-12 col-md-4">
                         <label for="selling_price" class="form-label">Selling Price (₹)</label>
                         <input type="number" step="0.01" class="form-control" id="selling_price" name="selling_price"
                             value="{{ old('selling_price', 0) }}" required>
                     </div>
                 </div>
                 <div class="row mb-3">
-                    <div class="col-md-4">
+                    <div class="col-12 col-md-4">
                         <label class="form-label">Profit / Unit</label>
                         <div class="form-control bg-light" id="profitPreview">₹0.00</div>
                     </div>

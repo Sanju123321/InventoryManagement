@@ -23,7 +23,7 @@
             <form method="POST" action="{{ url('/production') }}">
                 @csrf
                 <div class="row mb-3">
-                    <div class="col-md-4">
+                    <div class="col-12 col-md-4">
                         <label for="product_id" class="form-label">Product</label>
                         <select class="form-select" id="product_id" name="product_id" required>
                             <option value="">Select Product</option>
@@ -35,12 +35,12 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-12 col-md-4">
                         <label for="quantity_produced" class="form-label">Quantity Produced</label>
                         <input type="number" class="form-control" id="quantity_produced" name="quantity_produced"
                             value="{{ old('quantity_produced') }}" min="1" required>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-12 col-md-4">
                         <label for="production_date" class="form-label">Production Date</label>
                         <input type="date" class="form-control" id="production_date" name="production_date"
                             value="{{ old('production_date', date('Y-m-d')) }}" required>

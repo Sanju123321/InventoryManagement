@@ -16,7 +16,7 @@
     <div class="row g-4">
 
         {{-- ── Compose Form ──────────────────────────────────────────────────── --}}
-        <div class="col-xl-5">
+        <div class="col-12 col-xl-5">
             <div class="card shadow-sm">
                 <div class="card-header fw-semibold">
                     <i class="fas fa-bullhorn me-1 text-primary"></i> Send New Announcement
@@ -96,7 +96,7 @@
         </div>
 
         {{-- ── History ───────────────────────────────────────────────────────── --}}
-        <div class="col-xl-7">
+        <div class="col-12 col-xl-7">
             <div class="card shadow-sm">
                 <div class="card-header fw-semibold">
                     <i class="fas fa-history me-1"></i> Sent Announcements

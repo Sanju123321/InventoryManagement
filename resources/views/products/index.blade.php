@@ -16,12 +16,12 @@
     <div class="card mb-3">
         <div class="card-body">
             <form method="GET" action="{{ url('/products') }}" class="row g-2 align-items-end">
-                <div class="col-md-4">
+                <div class="col-12 col-md-4">
                     <label for="search" class="form-label small text-muted mb-1">Search</label>
                     <input type="text" class="form-control" id="search" name="search"
                         value="{{ request('search') }}" placeholder="Name or SKU...">
                 </div>
-                <div class="col-md-3">
+                <div class="col-12 col-md-3">
                     <label for="category_id" class="form-label small text-muted mb-1">Category</label>
                     <select class="form-control" id="category_id" name="category_id">
                         <option value="">All Categories</option>
@@ -31,7 +31,7 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-md-5 d-flex gap-2">
+                <div class="col-12 col-md-5 d-flex gap-2 flex-wrap">
                     <button type="submit" class="btn btn-primary"><i class="fas fa-search me-1"></i> Filter</button>
                     <a href="{{ url('/products') }}" class="btn btn-outline-secondary">Reset</a>
                 </div>
@@ -61,9 +61,9 @@
                         <tr>
                             <th style="width:40px">#</th>
                             <th>Name</th>
-                            <th>SKU</th>
-                            <th>Category</th>
-                            <th>Unit</th>
+                            <th class="col-hide-mobile">SKU</th>
+                            <th class="col-hide-mobile">Category</th>
+                            <th class="col-hide-mobile">Unit</th>
                             <th style="min-width:100px">Actions</th>
                         </tr>
                     </thead>
@@ -72,15 +72,15 @@
                             <tr>
                                 <td>{{ $loop->iteration + ($products->currentPage() - 1) * $products->perPage() }}</td>
                                 <td class="fw-semibold">{{ $product->name }}</td>
-                                <td><code class="text-muted">{{ $product->sku }}</code></td>
-                                <td>
+                                <td class="col-hide-mobile"><code class="text-muted">{{ $product->sku }}</code></td>
+                                <td class="col-hide-mobile">
                                     @if ($product->category)
                                         <span class="badge bg-info text-dark">{{ $product->category->name }}</span>
                                     @else
                                         <span class="text-muted">—</span>
                                     @endif
                                 </td>
-                                <td><span class="badge bg-secondary rounded-pill">{{ $product->unit }}</span></td>
+                                <td class="col-hide-mobile"><span class="badge bg-secondary rounded-pill">{{ $product->unit }}</span></td>
                                 <td>
                                     <div class="action-group">
                                         <a href="{{ url('/products/' . $product->id . '/edit') }}"

@@ -16,7 +16,7 @@
         </div>
 
         <div class="row justify-content-center">
-            <div class="col-lg-7">
+            <div class="col-12 col-lg-7">
                 <div class="card shadow-sm">
                     <div class="card-body p-4">
 
@@ -73,7 +73,7 @@
                             </div>
 
                             <div class="row g-3 mb-4">
-                                <div class="col-md-6">
+                                <div class="col-12 col-md-6">
                                     <label class="form-label fw-semibold">Password</label>
                                     <input type="password" name="password"
                                         class="form-control @error('password') is-invalid @enderror" required minlength="8"
@@ -82,7 +82,7 @@
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-12 col-md-6">
                                     <label class="form-label fw-semibold">Confirm Password</label>
                                     <input type="password" name="password_confirmation" class="form-control" required
                                         minlength="8">

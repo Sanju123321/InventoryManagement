@@ -24,7 +24,7 @@
             <form method="POST" action="{{ url('/sales/orders') }}" id="orderForm">
                 @csrf
                 <div class="row mb-3">
-                    <div class="col-md-6">
+                    <div class="col-12 col-md-6">
                         <label for="firm_id" class="form-label">Firm <span class="text-danger">*</span></label>
                         <select class="form-control @error('firm_id') is-invalid @enderror" id="firm_id"
                             name="firm_id" required>
@@ -38,7 +38,7 @@
                         </select>
                         @error('firm_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-12 col-md-6">
                         <label for="customer_id" class="form-label">Customer</label>
                         <select class="form-control" id="customer_id" name="customer_id" required>
                             <option value="">Select Customer</option>
@@ -52,7 +52,7 @@
                     </div>
                 </div>
                 <div class="row mb-3">
-                    <div class="col-md-12">
+                    <div class="col-12 col-md-12">
                         <div id="previousOrderBanner" class="alert alert-info mb-0 d-none">
                             <i class="fas fa-history"></i>
                             <span id="previousOrderText">Previous orders available.</span>

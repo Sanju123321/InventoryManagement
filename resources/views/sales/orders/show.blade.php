@@ -26,7 +26,7 @@
     @endphp
 
     <div class="row mb-4">
-        <div class="col-md-6">
+        <div class="col-12 col-md-6">
             <div class="card">
                 <div class="card-header"><i class="fas fa-info-circle me-1"></i> Order Details</div>
                 <div class="card-body">
@@ -280,7 +280,7 @@
             @endif
         </div>
 
-        <div class="col-md-6">
+        <div class="col-12 col-md-6">
             @if (auth()->user()->isAdmin() && $order->canAssignDriver() && $maxPayment > 0)
                 <div class="card mb-3">
                     <div class="card-header"><i class="fas fa-money-bill-wave me-1"></i> Record Payment</div>
