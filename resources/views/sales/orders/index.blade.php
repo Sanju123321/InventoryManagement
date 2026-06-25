@@ -16,7 +16,7 @@
     <div class="card mb-4">
         <div class="card-header"><i class="fas fa-filter me-1"></i> Filters</div>
         <div class="card-body">
-            <form method="GET" action="{{ url('/sales/orders') }}" class="row g-2 align-items-end">
+            <form method="GET" action="{{ url('/sales/orders') }}" class="row g-3 align-items-start">
                 <div class="col-12 col-sm-6 col-lg-2">
                     <label class="form-label small text-muted mb-1 d-lg-none">Status</label>
                     <select name="status" class="form-select form-select-sm">

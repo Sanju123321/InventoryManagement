@@ -13,7 +13,7 @@
     <div class="card mb-4">
         <div class="card-header"><i class="fas fa-filter me-1"></i> Filters</div>
         <div class="card-body">
-            <form method="GET" action="{{ route('activity-log.index') }}" class="row g-2 align-items-end">
+            <form method="GET" action="{{ route('activity-log.index') }}" class="row g-3 align-items-start">
                 <div class="col-12 col-md-3">
                     <label class="form-label mb-1 small">Action</label>
                     <select name="action" class="form-select form-select-sm">

@@ -9,7 +9,7 @@
   --action-btn-padding: 0.28rem 0.55rem;
   --action-btn-font-size: 0.78rem;
   --card-shadow: 0 2px 8px rgba(0,0,0,.08);
-  --topnav-height: 56px;
+  --topnav-height: 59px;
 }
 
 /* ── Global touch-friendly defaults ────────────────────────────────────── */
@@ -151,13 +151,12 @@ nav[aria-label="Pagination Navigation"] svg {
   #layoutSidenav #layoutSidenav_nav,
   .sb-nav-fixed #layoutSidenav #layoutSidenav_nav {
     position: fixed;
-    top: var(--topnav-height, 56px);
+    top: var(--topnav-height, 59px);
     left: 0;
     width: min(280px, 85vw);
     max-width: 280px;
     flex-basis: auto !important;
-    height: calc(100vh - var(--topnav-height, 56px));
-    height: calc(100dvh - var(--topnav-height, 56px));
+    height: calc(100dvh - var(--topnav-height, 59px));
     transform: translateX(-100%);
     z-index: 1040;
     transition: transform 0.2s ease-in-out;
@@ -174,6 +173,7 @@ nav[aria-label="Pagination Navigation"] svg {
     flex-direction: column;
     margin-left: 0 !important;
     padding-left: 0 !important;
+    padding-top: var(--topnav-height, 59px) !important;
     width: 100% !important;
     max-width: 100% !important;
     min-width: 0;

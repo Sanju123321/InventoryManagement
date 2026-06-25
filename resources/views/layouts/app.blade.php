@@ -101,6 +101,7 @@
             body.sb-nav-fixed #layoutSidenav #layoutSidenav_content {
                 margin-left: 0 !important;
                 padding-left: 0 !important;
+                padding-top: 59px !important;
                 width: 100% !important;
                 max-width: 100vw !important;
                 flex: none !important;
@@ -137,6 +138,7 @@
             if (content) {
                 content.style.setProperty('margin-left', '0', 'important');
                 content.style.setProperty('padding-left', '0', 'important');
+                content.style.setProperty('padding-top', '59px', 'important');
                 content.style.setProperty('width', '100%', 'important');
                 content.style.setProperty('max-width', '100vw', 'important');
             }

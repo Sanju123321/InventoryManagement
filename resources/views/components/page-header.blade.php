@@ -1,6 +1,6 @@
 @props(['title', 'breadcrumbs' => []])
 
-<div class="page-header mt-4 mb-4">
+<div class="page-header mb-4">
     <h1 class="mb-1">{{ $title }}</h1>
     @if (count($breadcrumbs))
         <ol class="breadcrumb mb-0">

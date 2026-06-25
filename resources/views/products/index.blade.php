@@ -15,7 +15,7 @@
 
     <div class="card mb-3">
         <div class="card-body">
-            <form method="GET" action="{{ url('/products') }}" class="row g-2 align-items-end">
+            <form method="GET" action="{{ url('/products') }}" class="row g-3 align-items-start">
                 <div class="col-12 col-md-4">
                     <label for="search" class="form-label small text-muted mb-1">Search</label>
                     <input type="text" class="form-control" id="search" name="search"

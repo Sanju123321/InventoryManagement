@@ -15,7 +15,7 @@
             <i class="fas fa-filter me-1"></i> Filter by Date Range
         </div>
         <div class="card-body">
-            <form method="GET" action="{{ url('/reports/material-usage') }}" class="row g-3 align-items-end">
+            <form method="GET" action="{{ url('/reports/material-usage') }}" class="row g-3 align-items-start">
                 <div class="col-auto">
                     <label for="from" class="form-label">From</label>
                     <input type="date" class="form-control" id="from" name="from" value="{{ $from }}">
