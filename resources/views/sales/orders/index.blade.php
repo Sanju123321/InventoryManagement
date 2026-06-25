@@ -49,12 +49,12 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-6 col-lg-2">
+                <div class="col-12 col-sm-6 col-lg-2">
                     <label class="form-label small text-muted mb-1 d-lg-none">From</label>
                     <input type="date" name="from" class="form-control form-control-sm" value="{{ request('from') }}"
                         placeholder="From">
                 </div>
-                <div class="col-6 col-lg-2">
+                <div class="col-12 col-sm-6 col-lg-2">
                     <label class="form-label small text-muted mb-1 d-lg-none">To</label>
                     <input type="date" name="to" class="form-control form-control-sm" value="{{ request('to') }}"
                         placeholder="To">

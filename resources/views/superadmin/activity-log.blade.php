@@ -32,11 +32,11 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-6 col-md-2">
+                <div class="col-12 col-sm-6 col-md-2">
                     <label class="form-label mb-1 small">From</label>
                     <input type="date" name="from" class="form-control form-control-sm" value="{{ request('from') }}">
                 </div>
-                <div class="col-6 col-md-2">
+                <div class="col-12 col-sm-6 col-md-2">
                     <label class="form-label mb-1 small">To</label>
                     <input type="date" name="to" class="form-control form-control-sm" value="{{ request('to') }}">
                 </div>

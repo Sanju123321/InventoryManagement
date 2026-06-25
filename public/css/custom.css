@@ -24,6 +24,11 @@ img, svg, video, canvas, iframe {
   height: auto;
 }
 
+html, body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
 /* Laravel's Tailwind pagination SVGs use w-5/h-5; without Tailwind those classes do nothing and
    the rule above lets icons grow to 100% parent width. Clamp icons if Tailwind view is ever used. */
 nav[aria-label="Pagination Navigation"] svg {
@@ -125,6 +130,46 @@ nav[aria-label="Pagination Navigation"] svg {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+/* ── Sidebar / layout shell (SB Admin) ─────────────────────────────────── */
+#layoutSidenav {
+  overflow-x: hidden;
+}
+
+/* Tablet & mobile: full-width content — do NOT zero margin-left (SB Admin needs -225px) */
+@media (max-width: 991.98px) {
+  .sb-nav-fixed #layoutSidenav #layoutSidenav_content {
+    padding-left: 0 !important;
+  }
+
+  #layoutSidenav #layoutSidenav_content {
+    margin-left: -225px;
+    min-width: 0;
+  }
+
+  .sb-sidenav-toggled #layoutSidenav #layoutSidenav_nav {
+    transform: translateX(0);
+  }
+
+  .sb-nav-fixed #layoutSidenav #layoutSidenav_nav {
+    position: fixed;
+    top: var(--topnav-height, 56px);
+    left: 0;
+    height: calc(100vh - var(--topnav-height, 56px));
+    flex-basis: 225px;
+  }
+}
+
+/* Desktop: sidebar visible, content offset */
+@media (min-width: 992px) {
+  .sb-nav-fixed #layoutSidenav #layoutSidenav_content {
+    padding-left: 225px;
+  }
+
+  #layoutSidenav #layoutSidenav_content {
+    margin-left: 0;
+  }
 }
 
 /* ── Sidebar ───────────────────────────────────────────────────────────── */
@@ -299,11 +344,6 @@ canvas {
 
 /* ── Tablet / iPad Air portrait & small tablets (576px – 767px) ─────── */
 @media (max-width: 767.98px) {
-  /* Content area: full width (sidebar collapses) */
-  #layoutSidenav #layoutSidenav_content {
-    margin-left: 0 !important;
-  }
-
   /* Page heading */
   h1.mt-4, .page-title {
     font-size: 1.2rem;
@@ -608,14 +648,12 @@ canvas {
    Mobile (≤576px) | Tablet/iPad Air (768–991px) | Large (≥1200px)
    ========================================================================== */
 
-/* ── Mobile: iPhone 16 Pro Max, Galaxy, Pixel (≤576px) ─────────────────── */
+/* ── Mobile (≤576px) ───────────────────────────────────────────────────── */
 @media (max-width: 576px) {
-  /* Full-width sections on phones */
   .row > [class*="col-"] {
     min-width: 0;
   }
 
-  /* KPI cards: 2-column grid on mobile */
   .row.g-3 > .col-6 .card {
     margin-bottom: 0 !important;
   }
@@ -628,47 +666,30 @@ canvas {
     font-size: 1.25em !important;
   }
 
-  /* Page header stacks */
   .page-header h1 {
     font-size: 1.25rem;
-  }
-
-  /* Touch-friendly buttons and links */
-  .btn,
-  .page-header .btn,
-  .sb-topnav .btn,
-  .action-group .btn {
-    min-height: 44px;
-    min-width: 44px;
   }
 
   .page-header .btn {
     width: 100%;
     justify-content: center;
+    min-height: 44px;
   }
 
-  /* Full-width action rows */
   .page-header .d-flex.gap-2 {
     width: 100%;
     flex-direction: column;
   }
 
-  /* Images scale within containers */
-  .img-fluid {
+  /* Filter date pairs: stack on very small screens */
+  form.row .col-6 {
+    flex: 0 0 100%;
     max-width: 100%;
-    height: auto;
   }
 }
 
-/* ── Tablet: iPad Air portrait & landscape (768px – 991px) ─────────────── */
+/* ── Tablet: iPad Air (768px – 991px) ──────────────────────────────────── */
 @media (min-width: 768px) and (max-width: 991px) {
-  /* Two-column layouts for KPI and content cards */
-  .row.g-3 > .col-md-6 {
-    flex: 0 0 50%;
-    max-width: 50%;
-  }
-
-  /* Balanced typography on tablet */
   h1, .page-header h1 {
     font-size: 1.45rem;
   }
@@ -682,41 +703,23 @@ canvas {
     font-size: 1.35rem !important;
   }
 
-  /* Comfortable touch targets */
-  .btn,
   .sb-sidenav .nav-link,
   .action-group .btn {
     min-height: 42px;
   }
 
-  /* Container padding for tablet readability */
   .container-fluid.px-4 {
     padding-left: 1.25rem !important;
     padding-right: 1.25rem !important;
   }
 
-  /* Chart height balance on tablet */
   .chart-box {
     height: 240px !important;
   }
 }
 
-/* ── Large screens: desktop & wide monitors (≥1200px) ────────────────────── */
+/* ── Large screens (≥1200px) ───────────────────────────────────────────── */
 @media (min-width: 1200px) {
-  /* Four-column KPI grid */
-  .row.g-3 > .col-lg-3 {
-    flex: 0 0 25%;
-    max-width: 25%;
-  }
-
-  /* Prevent overly stretched content on ultra-wide displays */
-  #layoutSidenav_content main .container-fluid.px-4 {
-    max-width: 1600px;
-    margin-left: auto;
-    margin-right: auto;
-  }
-
-  /* Generous spacing for readability */
   .container-fluid.px-4 {
     padding-left: 1.75rem !important;
     padding-right: 1.75rem !important;
@@ -726,11 +729,6 @@ canvas {
     font-size: 1.75rem;
   }
 
-  .card-body {
-    padding: 1.25rem;
-  }
-
-  /* Chart containers use more vertical space */
   .chart-box {
     height: 280px !important;
   }

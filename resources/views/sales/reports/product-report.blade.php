@@ -17,23 +17,23 @@
                     <thead class="table-dark">
                         <tr>
                             <th>Product</th>
-                            <th>SKU</th>
-                            <th>Production Cost</th>
-                            <th>Selling Price</th>
+                            <th class="col-hide-mobile">SKU</th>
+                            <th class="col-hide-mobile">Production Cost</th>
+                            <th class="col-hide-mobile">Selling Price</th>
                             <th>Total Produced</th>
                             <th>Total Sold</th>
                             <th>Available Stock</th>
                             <th>Total Revenue</th>
-                            <th>Total Profit</th>
+                            <th class="col-hide-mobile">Total Profit</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($products as $item)
                             <tr>
                                 <td>{{ $item['product']->name }}</td>
-                                <td>{{ $item['product']->sku }}</td>
-                                <td>₹{{ $item['cost'] ? number_format($item['cost']->production_cost, 2) : '-' }}</td>
-                                <td>₹{{ $item['cost'] ? number_format($item['cost']->selling_price, 2) : '-' }}</td>
+                                <td class="col-hide-mobile">{{ $item['product']->sku }}</td>
+                                <td class="col-hide-mobile">₹{{ $item['cost'] ? number_format($item['cost']->production_cost, 2) : '-' }}</td>
+                                <td class="col-hide-mobile">₹{{ $item['cost'] ? number_format($item['cost']->selling_price, 2) : '-' }}</td>
                                 <td>{{ $item['total_produced'] }}</td>
                                 <td>{{ $item['total_sold'] }}</td>
                                 <td>
@@ -46,7 +46,7 @@
                                     @endif
                                 </td>
                                 <td>₹{{ number_format($item['total_revenue'], 2) }}</td>
-                                <td>
+                                <td class="col-hide-mobile">
                                     @if ($item['total_profit'] >= 0)
                                         <span
                                             class="text-success fw-bold">₹{{ number_format($item['total_profit'], 2) }}</span>

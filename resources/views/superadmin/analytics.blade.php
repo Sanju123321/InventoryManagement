@@ -15,7 +15,7 @@
 
     {{-- ── KPI Cards ──────────────────────────────────────────────────── --}}
     <div class="row g-3 mb-4">
-        <div class="col-xl-3 col-md-6">
+        <div class="col-6 col-md-6 col-xl-3">
             <div class="card border-left-primary h-100 shadow-sm">
                 <div class="card-body d-flex align-items-center gap-3">
                     <div class="rounded-circle bg-primary bg-opacity-10 p-3 text-primary fs-4">
@@ -29,7 +29,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-md-6">
+        <div class="col-6 col-md-6 col-xl-3">
             <div class="card border-left-success h-100 shadow-sm">
                 <div class="card-body d-flex align-items-center gap-3">
                     <div class="rounded-circle bg-success bg-opacity-10 p-3 text-success fs-4">
@@ -43,7 +43,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-md-6">
+        <div class="col-6 col-md-6 col-xl-3">
             <div class="card border-left-info h-100 shadow-sm">
                 <div class="card-body d-flex align-items-center gap-3">
                     <div class="rounded-circle bg-info bg-opacity-10 p-3 text-info fs-4">
@@ -57,7 +57,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-md-6">
+        <div class="col-6 col-md-6 col-xl-3">
             <div class="card border-left-danger h-100 shadow-sm">
                 <div class="card-body d-flex align-items-center gap-3">
                     <div class="rounded-circle bg-danger bg-opacity-10 p-3 text-danger fs-4">
@@ -74,7 +74,7 @@
     </div>
 
     <div class="row g-3 mb-4">
-        <div class="col-xl-3 col-md-6">
+        <div class="col-6 col-md-6 col-xl-3">
             <div class="card shadow-sm h-100">
                 <div class="card-body d-flex align-items-center gap-3">
                     <div class="rounded-circle bg-secondary bg-opacity-10 p-3 text-secondary fs-4">
@@ -92,7 +92,7 @@
 
     {{-- ── Row 1: Production (daily) + Revenue trend ──────────────────── --}}
     <div class="row g-3 mb-4">
-        <div class="col-xl-8">
+        <div class="col-12 col-xl-8">
             <div class="card shadow-sm h-100">
                 <div class="card-header fw-semibold">
                     <i class="fas fa-industry me-1 text-info"></i>
@@ -103,7 +103,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-4">
+        <div class="col-12 col-xl-4">
             <div class="card shadow-sm h-100">
                 <div class="card-header fw-semibold">
                     <i class="fas fa-chart-line me-1 text-success"></i>
@@ -118,7 +118,7 @@
 
     {{-- ── Row 2: Top companies revenue + Top companies production ──────── --}}
     <div class="row g-3 mb-4">
-        <div class="col-xl-6">
+        <div class="col-12 col-xl-6">
             <div class="card shadow-sm h-100">
                 <div class="card-header fw-semibold">
                     <i class="fas fa-trophy me-1 text-warning"></i>
@@ -133,7 +133,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-6">
+        <div class="col-12 col-xl-6">
             <div class="card shadow-sm h-100">
                 <div class="card-header fw-semibold">
                     <i class="fas fa-boxes me-1 text-info"></i>
@@ -152,7 +152,7 @@
 
     {{-- ── Row 3: Low-stock by company chart + Low-stock table ────────── --}}
     <div class="row g-3 mb-4">
-        <div class="col-xl-4">
+        <div class="col-12 col-xl-4">
             <div class="card shadow-sm h-100">
                 <div class="card-header fw-semibold">
                     <i class="fas fa-exclamation-circle me-1 text-danger"></i>
@@ -168,7 +168,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-8">
+        <div class="col-12 col-xl-8">
             <div class="card shadow-sm h-100">
                 <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
                     <span><i class="fas fa-list me-1 text-danger"></i> Low-Stock Materials (All Tenants)</span>

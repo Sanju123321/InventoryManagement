@@ -8,30 +8,50 @@
 //
 
 window.addEventListener("DOMContentLoaded", (event) => {
-  // Toggle the side navigation
   const sidebarToggle = document.body.querySelector("#sidebarToggle");
+
+  function applySidebarState() {
+    const isDesktop = window.innerWidth >= 992;
+
+    if (isDesktop) {
+      const stored = localStorage.getItem("sb|sidebar-toggle");
+      document.body.classList.toggle("sb-sidenav-toggled", stored === "true");
+    } else {
+      document.body.classList.remove("sb-sidenav-toggled");
+    }
+  }
+
+  applySidebarState();
+
   if (sidebarToggle) {
     sidebarToggle.addEventListener("click", (event) => {
       event.preventDefault();
       document.body.classList.toggle("sb-sidenav-toggled");
-      localStorage.setItem(
-        "sb|sidebar-toggle",
-        document.body.classList.contains("sb-sidenav-toggled"),
-      );
+
+      if (window.innerWidth >= 992) {
+        localStorage.setItem(
+          "sb|sidebar-toggle",
+          document.body.classList.contains("sb-sidenav-toggled"),
+        );
+      }
     });
   }
 
-  // Close sidebar when tapping the overlay on mobile/tablet
   const content = document.getElementById("layoutSidenav_content");
   if (content) {
-    content.addEventListener("click", function (e) {
+    content.addEventListener("click", function () {
       if (
         window.innerWidth < 992 &&
         document.body.classList.contains("sb-sidenav-toggled")
       ) {
-        // Only close if clicking the overlay (::before pseudo-element area)
         document.body.classList.remove("sb-sidenav-toggled");
       }
     });
   }
+
+  let resizeTimer;
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(applySidebarState, 150);
+  });
 });
