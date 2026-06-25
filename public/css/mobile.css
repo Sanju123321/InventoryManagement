@@ -20,20 +20,53 @@
 
   body.sb-nav-fixed #layoutSidenav #layoutSidenav_nav {
     position: fixed !important;
-    top: 56px;
+    top: var(--topnav-height, 59px) !important;
     left: 0;
     width: min(280px, 88vw) !important;
     max-width: 280px;
     flex: none !important;
     flex-basis: 0 !important;
-    height: calc(100dvh - 56px);
+    height: calc(100dvh - var(--topnav-height, 59px)) !important;
+    max-height: calc(100dvh - var(--topnav-height, 59px)) !important;
     transform: translateX(-100%) !important;
     z-index: 1040;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
   }
 
   body.sb-nav-fixed.sb-sidenav-toggled #layoutSidenav #layoutSidenav_nav {
     transform: translateX(0) !important;
     box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
+  }
+
+  /* Nav sits below topbar — remove desktop padding-top; scroll menu area */
+  body.sb-nav-fixed #layoutSidenav #layoutSidenav_nav .sb-sidenav {
+    height: 100% !important;
+    max-height: 100% !important;
+    padding-top: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+  }
+
+  body.sb-nav-fixed #layoutSidenav #layoutSidenav_nav .sb-sidenav .sb-sidenav-menu {
+    flex: 1 1 auto !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    min-height: 0 !important;
+    overscroll-behavior: contain;
+  }
+
+  body.sb-nav-fixed #layoutSidenav #layoutSidenav_nav .sb-sidenav .sb-sidenav-footer {
+    flex-shrink: 0 !important;
+    flex-grow: 0 !important;
+  }
+
+  /* Prevent page scroll behind open sidebar */
+  body.sb-nav-fixed.sb-sidenav-toggled {
+    overflow: hidden !important;
   }
 
   body.sb-nav-fixed #layoutSidenav #layoutSidenav_content {
