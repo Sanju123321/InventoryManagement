@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, viewport-fit=cover" />
     <meta name="csrf-token" content="{{ csrf_token() }}" />
 
     {{-- SEO Meta --}}
@@ -36,8 +36,8 @@
     <link rel="apple-touch-icon" href="{{ asset('images/kemtex-logo.svg') }}" />
 
     <link href="https://cdn.jsdelivr.net/npm/simple-datatables@7.1.2/dist/style.min.css" rel="stylesheet" />
-    <link href="{{ asset('css/styles.css') }}" rel="stylesheet" />
-    <link href="{{ asset('css/custom.css') }}" rel="stylesheet" />
+    <link href="{{ asset('css/styles.css') }}?v={{ @filemtime(public_path('css/styles.css')) }}" rel="stylesheet" />
+    <link href="{{ asset('css/custom.css') }}?v={{ @filemtime(public_path('css/custom.css')) }}" rel="stylesheet" />
     <script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous" defer></script>
 
     {{-- Google Analytics GA4 --}}
@@ -125,7 +125,7 @@
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous">
     </script>
-    <script src="{{ asset('js/scripts.js') }}"></script>
+    <script src="{{ asset('js/scripts.js') }}?v={{ @filemtime(public_path('js/scripts.js')) }}"></script>
     @yield('scripts')
     <script>
         (function() {

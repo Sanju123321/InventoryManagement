@@ -137,31 +137,78 @@ nav[aria-label="Pagination Navigation"] svg {
   overflow-x: hidden;
 }
 
-/* Tablet & mobile: full-width content — do NOT zero margin-left (SB Admin needs -225px) */
+/*
+ * Mobile & tablet (< 992px): sidebar overlays — must NOT reserve 225px in flex.
+ * SB Admin default keeps nav in flex flow (flex-basis: 225px), shrinking content
+ * to ~50% width on phones. Pull nav out of flow and give content 100% width.
+ */
 @media (max-width: 991.98px) {
-  .sb-nav-fixed #layoutSidenav #layoutSidenav_content {
-    padding-left: 0 !important;
+  #layoutSidenav {
+    display: block;
+    width: 100%;
   }
 
-  #layoutSidenav #layoutSidenav_content {
-    margin-left: -225px;
-    min-width: 0;
-  }
-
-  .sb-sidenav-toggled #layoutSidenav #layoutSidenav_nav {
-    transform: translateX(0);
-  }
-
+  #layoutSidenav #layoutSidenav_nav,
   .sb-nav-fixed #layoutSidenav #layoutSidenav_nav {
     position: fixed;
     top: var(--topnav-height, 56px);
     left: 0;
+    width: min(280px, 85vw);
+    max-width: 280px;
+    flex-basis: auto !important;
     height: calc(100vh - var(--topnav-height, 56px));
-    flex-basis: 225px;
+    height: calc(100dvh - var(--topnav-height, 56px));
+    transform: translateX(-100%);
+    z-index: 1040;
+    transition: transform 0.2s ease-in-out;
+  }
+
+  .sb-sidenav-toggled #layoutSidenav #layoutSidenav_nav {
+    transform: translateX(0);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.25);
+  }
+
+  #layoutSidenav #layoutSidenav_content,
+  .sb-nav-fixed #layoutSidenav #layoutSidenav_content {
+    display: flex;
+    flex-direction: column;
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0;
+    flex: none !important;
+  }
+
+  #layoutSidenav #layoutSidenav_content main,
+  #layoutSidenav #layoutSidenav_content main .container-fluid {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .sb-topnav .navbar-brand {
+    width: auto !important;
+    max-width: 55vw;
+  }
+
+  .sb-sidenav-toggled #layoutSidenav #layoutSidenav_content:before {
+    z-index: 1039;
+  }
+
+  /* iPhone / Android safe areas (notch, home indicator) */
+  .sb-topnav {
+    padding-left: env(safe-area-inset-left, 0);
+    padding-right: env(safe-area-inset-right, 0);
+  }
+
+  #layoutSidenav #layoutSidenav_content main .container-fluid.px-4,
+  footer .container-fluid.px-4 {
+    padding-left: max(0.75rem, env(safe-area-inset-left, 0px)) !important;
+    padding-right: max(0.75rem, env(safe-area-inset-right, 0px)) !important;
   }
 }
 
-/* Desktop: sidebar visible, content offset */
+/* Desktop: sidebar in layout, content offset */
 @media (min-width: 992px) {
   .sb-nav-fixed #layoutSidenav #layoutSidenav_content {
     padding-left: 225px;
@@ -169,6 +216,10 @@ nav[aria-label="Pagination Navigation"] svg {
 
   #layoutSidenav #layoutSidenav_content {
     margin-left: 0;
+  }
+
+  .sb-topnav .navbar-brand {
+    width: 225px;
   }
 }
 
@@ -379,11 +430,13 @@ canvas {
     max-width: 100%;
   }
 
-  /* Footer: stack */
+  /* Footer: stack & full width */
   footer .d-flex {
     flex-direction: column;
-    gap: 6px;
-    text-align: center;
+    align-items: flex-start !important;
+    gap: 0.35rem;
+    text-align: left;
+    width: 100%;
   }
 
   /* Banner: stack */
@@ -455,6 +508,8 @@ canvas {
   .sb-topnav .navbar-brand {
     font-size: 0.92rem;
     padding-left: 0.75rem !important;
+    width: auto !important;
+    max-width: 45vw !important;
   }
   .sb-topnav .navbar-brand img {
     max-height: 30px;
@@ -486,10 +541,53 @@ canvas {
     border-radius: .375rem;
   }
 
-  /* Container: minimal padding */
+  /* Container: comfortable mobile padding */
   .container-fluid.px-4 {
-    padding-left: 0.5rem !important;
-    padding-right: 0.5rem !important;
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+
+  /* Dashboard KPI: 2 columns on phones */
+  .row.g-3 > .col-6 {
+    flex: 0 0 50%;
+    max-width: 50%;
+  }
+
+  /* Sales / dashboard stat cards */
+  .stat-card .card-body {
+    padding: 0.85rem 0.9rem !important;
+  }
+
+  .stat-value {
+    font-size: 1rem !important;
+  }
+
+  .stat-label {
+    font-size: 0.62rem !important;
+    letter-spacing: 0.4px;
+  }
+
+  .stat-icon {
+    width: 36px !important;
+    height: 36px !important;
+    font-size: 0.95rem !important;
+  }
+
+  .stat-card .card-body {
+    flex-wrap: nowrap;
+    gap: 0.35rem !important;
+  }
+
+  /* Page header action buttons: side by side when possible */
+  .page-header .d-flex.gap-2 {
+    flex-direction: row;
+    width: 100%;
+  }
+
+  .page-header .d-flex.gap-2 .btn {
+    flex: 1 1 auto;
+    width: auto;
+    min-height: 40px;
   }
 
   /* Table: smaller text for all tables (not just table-sm) */
@@ -654,35 +752,12 @@ canvas {
     min-width: 0;
   }
 
-  .row.g-3 > .col-6 .card {
-    margin-bottom: 0 !important;
-  }
-
-  .row.g-3 > .col-6 .card .card-body {
-    padding: 0.85rem;
-  }
-
-  .row.g-3 > .col-6 .card .fa-2x {
-    font-size: 1.25em !important;
-  }
-
   .page-header h1 {
     font-size: 1.25rem;
   }
 
-  .page-header .btn {
-    width: 100%;
-    justify-content: center;
-    min-height: 44px;
-  }
-
-  .page-header .d-flex.gap-2 {
-    width: 100%;
-    flex-direction: column;
-  }
-
   /* Filter date pairs: stack on very small screens */
-  form.row .col-6 {
+  form.row .col-6:not([class*="col-sm"]) {
     flex: 0 0 100%;
     max-width: 100%;
   }
