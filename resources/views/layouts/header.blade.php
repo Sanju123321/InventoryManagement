@@ -3,6 +3,7 @@
     <a class="navbar-brand ps-3 d-flex align-items-center"
         href="{{ auth()->check() && auth()->user()->isSuperAdmin() ? url('/superadmin/dashboard') : url('/dashboard') }}">
         <img src="{{ asset('images/kemtex-logo.svg') }}" alt="Kemtex Management System" height="38"
+            class="img-fluid"
             style="width:auto;max-width:120px;filter:drop-shadow(0 2px 6px rgba(245,200,0,.3));" loading="eager" /></a>
     <!-- Sidebar Toggle-->
     <button class="btn btn-link btn-sm order-1 order-lg-0 me-4 me-lg-0" id="sidebarToggle" href="#!">

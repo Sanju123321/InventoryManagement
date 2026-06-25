@@ -3,13 +3,16 @@
 @section('title', 'Dashboard - Kemtex ERP')
 
 @section('content')
-    <h1 class="mt-4">Dashboard</h1>
-    <ol class="breadcrumb mb-4">
-        <li class="breadcrumb-item active">Dashboard</li>
-    </ol>
-    <div class="row">
-        <div class="col-6 col-xl-3">
-            <div class="card bg-primary text-white mb-4">
+    <div class="page-header mt-4 mb-4">
+        <h1 class="mb-1">Dashboard</h1>
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item active">Dashboard</li>
+        </ol>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-6 col-lg-3">
+            <div class="card bg-primary text-white h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
@@ -25,8 +28,8 @@
                 </div>
             </div>
         </div>
-        <div class="col-6 col-xl-3">
-            <div class="card bg-warning text-white mb-4">
+        <div class="col-6 col-md-6 col-lg-3">
+            <div class="card bg-warning text-white h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
@@ -42,8 +45,8 @@
                 </div>
             </div>
         </div>
-        <div class="col-6 col-xl-3">
-            <div class="card bg-success text-white mb-4">
+        <div class="col-6 col-md-6 col-lg-3">
+            <div class="card bg-success text-white h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
@@ -59,8 +62,8 @@
                 </div>
             </div>
         </div>
-        <div class="col-6 col-xl-3">
-            <div class="card bg-danger text-white mb-4">
+        <div class="col-6 col-md-6 col-lg-3">
+            <div class="card bg-danger text-white h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
@@ -78,9 +81,9 @@
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-xl-6">
-            <div class="card mb-4">
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-md-6">
+            <div class="card mb-4 h-100">
                 <div class="card-header">
                     <i class="fas fa-industry me-1"></i>
                     Recent Production Logs
@@ -113,8 +116,8 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-6">
-            <div class="card mb-4">
+        <div class="col-12 col-md-6">
+            <div class="card mb-4 h-100">
                 <div class="card-header">
                     <i class="fas fa-exclamation-triangle me-1"></i>
                     Low Stock Materials
@@ -149,10 +152,10 @@
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-xl-12">
+    <div class="row g-3 mb-4">
+        <div class="col-12">
             <div class="card mb-4">
-                <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <span><i class="fas fa-chart-bar me-1"></i> Product Sales & Profit Report</span>
                     <a href="{{ url('/sales/reports/products') }}" class="btn btn-sm btn-outline-primary">View Full
                         Report</a>
@@ -163,24 +166,24 @@
                             <thead class="table-dark">
                                 <tr>
                                     <th>Product</th>
-                                    <th>SKU</th>
-                                    <th>Production Cost</th>
-                                    <th>Selling Price</th>
+                                    <th class="col-hide-mobile">SKU</th>
+                                    <th class="col-hide-mobile">Production Cost</th>
+                                    <th class="col-hide-mobile">Selling Price</th>
                                     <th>Total Produced</th>
                                     <th>Total Sold</th>
                                     <th>Available Stock</th>
                                     <th>Total Revenue</th>
-                                    <th>Total Profit</th>
+                                    <th class="col-hide-mobile">Total Profit</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @forelse($productReport ?? [] as $item)
                                     <tr>
                                         <td>{{ $item['product']->name }}</td>
-                                        <td>{{ $item['product']->sku }}</td>
-                                        <td>₹{{ $item['cost'] ? number_format($item['cost']->production_cost, 2) : '-' }}
+                                        <td class="col-hide-mobile">{{ $item['product']->sku }}</td>
+                                        <td class="col-hide-mobile">₹{{ $item['cost'] ? number_format($item['cost']->production_cost, 2) : '-' }}
                                         </td>
-                                        <td>₹{{ $item['cost'] ? number_format($item['cost']->selling_price, 2) : '-' }}
+                                        <td class="col-hide-mobile">₹{{ $item['cost'] ? number_format($item['cost']->selling_price, 2) : '-' }}
                                         </td>
                                         <td>{{ $item['total_produced'] }}</td>
                                         <td>{{ $item['total_sold'] }}</td>
@@ -194,7 +197,7 @@
                                             @endif
                                         </td>
                                         <td>₹{{ number_format($item['total_revenue'], 2) }}</td>
-                                        <td>
+                                        <td class="col-hide-mobile">
                                             @if ($item['total_profit'] >= 0)
                                                 <span
                                                     class="text-success fw-bold">₹{{ number_format($item['total_profit'], 2) }}</span>
@@ -228,8 +231,8 @@
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-xl-12">
+    <div class="row g-3 mb-4">
+        <div class="col-12">
             <div class="card mb-4">
                 <div class="card-header">
                     <i class="fas fa-exchange-alt me-1"></i>

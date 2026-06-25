@@ -242,7 +242,7 @@
 
     {{-- ── Stat Cards ──────────────────────────────────────────── --}}
     <div class="row g-3 mb-4">
-        <div class="col-6 col-lg-3">
+        <div class="col-6 col-md-6 col-lg-3">
             <div class="card stat-card grad-green text-white h-100">
                 <div class="card-body d-flex justify-content-between align-items-center gap-2">
                     <div>
@@ -254,7 +254,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-6 col-lg-3">
+        <div class="col-6 col-md-6 col-lg-3">
             <div class="card stat-card grad-blue text-white h-100">
                 <div class="card-body d-flex justify-content-between align-items-center gap-2">
                     <div>
@@ -266,7 +266,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-6 col-lg-3">
+        <div class="col-6 col-md-6 col-lg-3">
             <div class="card stat-card grad-red text-white h-100">
                 <div class="card-body d-flex justify-content-between align-items-center gap-2">
                     <div>
@@ -278,7 +278,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-6 col-lg-3">
+        <div class="col-6 col-md-6 col-lg-3">
             <div class="card stat-card grad-orange text-white h-100">
                 <div class="card-body d-flex justify-content-between align-items-center gap-2">
                     <div>
