@@ -10,8 +10,20 @@
         <li class="breadcrumb-item active">Add</li>
     </ol>
 
+    @if (session('success'))
+        <div class="alert alert-success">{{ session('success') }}</div>
+    @endif
+    @if (session('error'))
+        <div class="alert alert-danger">{{ session('error') }}</div>
+    @endif
+
     <div class="card mb-4">
-        <div class="card-header"><i class="fas fa-plus me-1"></i> New Customer</div>
+        <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div><i class="fas fa-plus me-1"></i> New Customer</div>
+            <button type="button" class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#importCustomersModal">
+                <i class="fas fa-file-import me-1"></i><span class="btn-label">Import CSV</span>
+            </button>
+        </div>
         <div class="card-body">
             @if ($errors->any())
                 <div class="alert alert-danger">
@@ -78,6 +90,43 @@
                 <button type="submit" class="btn btn-primary">Save Customer</button>
                 <a href="{{ url('/customers') }}" class="btn btn-secondary">Cancel</a>
             </form>
+        </div>
+    </div>
+
+    <div class="modal fade" id="importCustomersModal" tabindex="-1" aria-labelledby="importCustomersModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="POST" action="{{ route('customers.import') }}" enctype="multipart/form-data">
+                    @csrf
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="importCustomersModalLabel">Import Customers (CSV)</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="small text-muted mb-3">
+                            Use a <strong>.csv</strong> file (not Excel .xlsx). Columns:
+                            <code>company_id</code>, <code>created_by</code>, <code>name</code>, <code>phone</code>,
+                            <code>email</code>, <code>address</code>, <code>google_location</code>, <code>state</code>,
+                            <code>authorized_person</code>, <code>contact_details</code>, <code>gst_number</code>,
+                            <code>md_details</code>.
+                            If blank, <code>company_id</code> / <code>created_by</code> default to your account.
+                        </p>
+                        <div class="mb-3">
+                            <label for="customer_csv_file" class="form-label">CSV File</label>
+                            <input type="file" class="form-control" id="customer_csv_file" name="csv_file" accept=".csv,text/csv" required>
+                        </div>
+                        <a href="{{ route('customers.import.template') }}" class="btn btn-sm btn-outline-secondary">
+                            <i class="fas fa-download me-1"></i>Download template
+                        </a>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-file-import me-1"></i>Import
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 @endsection

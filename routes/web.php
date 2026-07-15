@@ -94,12 +94,16 @@ Route::middleware(['auth.admin', 'check.status'])->group(function () {
     Route::middleware('check.role:admin,sales_admin')->group(function () {
         Route::get('/sales/dashboard', [SalesDashboardController::class, 'index']);
         Route::get('/customers/export', [CustomerController::class, 'export'])->name('customers.export');
+        Route::get('/customers/import/template', [CustomerController::class, 'importTemplate'])->name('customers.import.template');
+        Route::post('/customers/import', [CustomerController::class, 'import'])->name('customers.import');
         Route::resource('/customers', CustomerController::class);
         Route::post('/customers/{customer}/payments', [CustomerController::class, 'storePayment'])->name('customers.payments.store');
         Route::get('/customers/{customer}/ledger-export', [CustomerController::class, 'exportLedger'])->name('customers.ledger.export');
 
         Route::get('/sales/orders', [SalesOrderController::class, 'index']);
         Route::get('/sales/orders/export', [SalesOrderController::class, 'export'])->name('sales.orders.export');
+        Route::get('/sales/orders/import/template', [SalesOrderController::class, 'importTemplate'])->name('sales.orders.import.template');
+        Route::post('/sales/orders/import', [SalesOrderController::class, 'import'])->name('sales.orders.import');
         Route::get('/sales/orders/previous-orders', [SalesOrderController::class, 'previousOrders'])->name('sales.orders.previous-orders');
         Route::get('/sales/orders/recent-items', [SalesOrderController::class, 'recentItems'])->name('sales.orders.recent-items');
         Route::get('/sales/orders/create', [SalesOrderController::class, 'create']);

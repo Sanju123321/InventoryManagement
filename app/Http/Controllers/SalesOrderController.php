@@ -613,6 +613,287 @@ class SalesOrderController extends Controller
         return response()->stream($callback, 200, $headers);
     }
 
+    public function importTemplate()
+    {
+        $filename = 'sales_orders_import_template.csv';
+        $headers = [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $callback = function () {
+            $handle = fopen('php://output', 'w');
+            fwrite($handle, "\xEF\xBB\xBF");
+            fputcsv($handle, [
+                'Customer Name',
+                'Firm Name',
+                'Product Name',
+                'Qty',
+                'Rate',
+                'GST Rate',
+                'Discount',
+                'Notes',
+                'Driver Name',
+            ]);
+            fputcsv($handle, [
+                'SAMPLE TRADERS',
+                'Main Firm',
+                'Sample Product',
+                '10',
+                '100',
+                '18',
+                '0',
+                '',
+                '',
+            ]);
+            fclose($handle);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    public function import(Request $request)
+    {
+        $request->validate([
+            'csv_file' => 'required|file|mimes:csv,txt|max:5120',
+        ]);
+
+        $companyId = auth()->user()->company_id;
+        $isAdmin = auth()->user()->role === 'admin';
+        $path = $request->file('csv_file')->getRealPath();
+        $handle = fopen($path, 'r');
+
+        if ($handle === false) {
+            return back()->with('error', 'Unable to read the uploaded CSV file.');
+        }
+
+        $headerRow = fgetcsv($handle);
+        if ($headerRow === false) {
+            fclose($handle);
+            return back()->with('error', 'The CSV file is empty.');
+        }
+
+        $headerRow[0] = preg_replace('/^\xEF\xBB\xBF/', '', (string) $headerRow[0]);
+        $map = $this->mapSalesOrderImportHeaders($headerRow);
+
+        foreach (['customer_name', 'product_name', 'quantity', 'price'] as $required) {
+            if (! isset($map[$required])) {
+                fclose($handle);
+                return back()->with('error', 'CSV must include Customer Name, Product Name, Qty, and Rate columns. Download the template for the correct format.');
+            }
+        }
+
+        $groups = [];
+        $errors = [];
+        $rowNum = 1;
+
+        while (($row = fgetcsv($handle)) !== false) {
+            $rowNum++;
+
+            if ($this->csvRowIsEmpty($row)) {
+                continue;
+            }
+
+            $customerName = trim((string) ($row[$map['customer_name']] ?? ''));
+            $productName = trim((string) ($row[$map['product_name']] ?? ''));
+            $qty = (int) preg_replace('/[^\d]/', '', (string) ($row[$map['quantity']] ?? '0'));
+            $price = (float) str_replace([',', '₹', 'Rs', ' '], '', (string) ($row[$map['price']] ?? '0'));
+            $firmName = trim((string) ($row[$map['firm_name'] ?? -1] ?? ''));
+            $gstRate = isset($map['gst_rate']) ? (int) ($row[$map['gst_rate']] ?? 18) : 18;
+            $discount = isset($map['discount']) ? (float) str_replace(',', '', (string) ($row[$map['discount']] ?? 0)) : 0;
+            $notes = trim((string) ($row[$map['notes'] ?? -1] ?? ''));
+            $driverName = trim((string) ($row[$map['driver_name'] ?? -1] ?? ''));
+
+            if ($customerName === '' || $productName === '' || $qty < 1 || $price <= 0) {
+                $errors[] = "Row {$rowNum}: customer, product, qty (>0) and rate (>0) are required.";
+                continue;
+            }
+
+            if (! in_array($gstRate, [0, 5, 18], true)) {
+                $gstRate = 18;
+            }
+
+            $groupKey = strtolower($customerName) . '|' . strtolower($firmName) . '|' . strtolower($notes);
+
+            if (! isset($groups[$groupKey])) {
+                $groups[$groupKey] = [
+                    'customer_name' => $customerName,
+                    'firm_name' => $firmName,
+                    'gst_rate' => $gstRate,
+                    'discount' => $discount,
+                    'notes' => $notes,
+                    'driver_name' => $driverName,
+                    'items' => [],
+                    'rows' => [],
+                ];
+            }
+
+            $groups[$groupKey]['items'][] = [
+                'product_name' => $productName,
+                'quantity' => $qty,
+                'price' => $price,
+            ];
+            $groups[$groupKey]['rows'][] = $rowNum;
+        }
+
+        fclose($handle);
+
+        $created = 0;
+        $skipped = 0;
+
+        foreach ($groups as $group) {
+            $customerQuery = Customer::where('company_id', $companyId)
+                ->where('name', $group['customer_name']);
+            if (auth()->user()->role === 'sales_admin') {
+                $customerQuery->where('created_by', auth()->id());
+            }
+            $customer = $customerQuery->first();
+
+            if (! $customer) {
+                $skipped++;
+                $errors[] = "Customer '{$group['customer_name']}' not found (rows " . implode(',', $group['rows']) . ').';
+                continue;
+            }
+
+            $firm = null;
+            if ($group['firm_name'] !== '') {
+                $firm = Firm::where('company_id', $companyId)
+                    ->where('name', $group['firm_name'])
+                    ->first();
+                if (! $firm) {
+                    $skipped++;
+                    $errors[] = "Firm '{$group['firm_name']}' not found for customer '{$group['customer_name']}'.";
+                    continue;
+                }
+            } else {
+                $firm = Firm::where('company_id', $companyId)->active()->orderBy('name')->first();
+                if (! $firm) {
+                    $skipped++;
+                    $errors[] = "No firm found for customer '{$group['customer_name']}'. Add a Firm Name column or create a firm first.";
+                    continue;
+                }
+            }
+
+            $itemsData = [];
+            $itemError = false;
+            foreach ($group['items'] as $item) {
+                $product = Product::where('company_id', $companyId)
+                    ->where('name', $item['product_name'])
+                    ->first();
+                if (! $product) {
+                    $skipped++;
+                    $errors[] = "Product '{$item['product_name']}' not found for customer '{$group['customer_name']}'.";
+                    $itemError = true;
+                    break;
+                }
+                $itemsData[] = [
+                    'product_id' => $product->id,
+                    'quantity' => $item['quantity'],
+                    'price' => $item['price'],
+                ];
+            }
+
+            if ($itemError || empty($itemsData)) {
+                continue;
+            }
+
+            $totals = $this->calculateOrderTotals(
+                $itemsData,
+                (int) $group['gst_rate'],
+                (float) $group['discount']
+            );
+
+            DB::transaction(function () use ($companyId, $customer, $firm, $isAdmin, $totals, $itemsData, $group, &$created) {
+                $order = SalesOrder::create([
+                    'company_id' => $companyId,
+                    'customer_id' => $customer->id,
+                    'firm_id' => $firm->id,
+                    'subtotal' => $totals['subtotal'],
+                    'gst_rate' => $totals['gst_rate'],
+                    'gst_amount' => $totals['gst_amount'],
+                    'discount_amount' => $totals['discount_amount'],
+                    'total_amount' => $totals['grand_total'],
+                    'paid_amount' => 0,
+                    'pending_amount' => $totals['grand_total'],
+                    'status' => $isAdmin ? 'approved' : 'pending',
+                    'approved_by' => $isAdmin ? auth()->id() : null,
+                    'created_by' => auth()->id(),
+                    'notes' => $group['notes'] !== '' ? $group['notes'] : null,
+                    'driver_name' => $group['driver_name'] !== '' ? $group['driver_name'] : null,
+                ]);
+
+                foreach ($itemsData as $item) {
+                    $order->items()->create([
+                        'product_id' => $item['product_id'],
+                        'quantity' => $item['quantity'],
+                        'price' => $item['price'],
+                        'total' => round($item['quantity'] * $item['price'], 2),
+                    ]);
+                }
+
+                $created++;
+            });
+        }
+
+        ActivityLogService::log(
+            'sales.imported',
+            "Sales orders CSV imported. Created: {$created}, Skipped groups: {$skipped}."
+        );
+
+        $message = "Import complete: {$created} order(s) created";
+        if ($skipped > 0) {
+            $message .= ", {$skipped} skipped";
+        }
+        $message .= '.';
+
+        if (! empty($errors)) {
+            $message .= ' Issues: ' . implode(' ', array_slice($errors, 0, 5));
+            if (count($errors) > 5) {
+                $message .= ' …';
+            }
+        }
+
+        return redirect('/sales/orders')->with('success', $message);
+    }
+
+    private function mapSalesOrderImportHeaders(array $headerRow): array
+    {
+        $aliases = [
+            'customer_name' => ['customer name', 'customer', 'party name'],
+            'firm_name' => ['firm name', 'firm'],
+            'product_name' => ['product name', 'product'],
+            'quantity' => ['qty', 'quantity'],
+            'price' => ['rate', 'price', 'rate (rs)', 'rate (rs.)'],
+            'gst_rate' => ['gst rate', 'gst rate (%)', 'gst'],
+            'discount' => ['discount', 'discount (rs)', 'discount (rs.)'],
+            'notes' => ['notes', 'note'],
+            'driver_name' => ['driver name', 'driver'],
+        ];
+
+        $map = [];
+        foreach ($headerRow as $index => $label) {
+            $key = strtolower(trim((string) $label));
+            foreach ($aliases as $field => $names) {
+                if (in_array($key, $names, true) && ! isset($map[$field])) {
+                    $map[$field] = $index;
+                }
+            }
+        }
+
+        return $map;
+    }
+
+    private function csvRowIsEmpty(array $row): bool
+    {
+        foreach ($row as $cell) {
+            if (trim((string) $cell) !== '') {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     /**
      * @param  array<int, array{quantity: int|float, price: int|float}>  $items
      * @return array{subtotal: float, gst_rate: int, gst_amount: float, discount_amount: float, grand_total: float}

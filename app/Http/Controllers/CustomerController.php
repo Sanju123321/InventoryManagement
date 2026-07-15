@@ -384,4 +384,343 @@ class CustomerController extends Controller
 
         return response()->stream($callback, 200, $headers);
     }
+
+    public function importTemplate()
+    {
+        $filename = 'customers_import_template.csv';
+        $headers = [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $user = auth()->user();
+
+        $callback = function () use ($user) {
+            $handle = fopen('php://output', 'w');
+            fwrite($handle, "\xEF\xBB\xBF");
+            fputcsv($handle, [
+                'company_id',
+                'created_by',
+                'name',
+                'phone',
+                'email',
+                'address',
+                'google_location',
+                'state',
+                'authorized_person',
+                'contact_details',
+                'gst_number',
+                'md_details',
+            ]);
+            fputcsv($handle, [
+                $user->company_id,
+                $user->id,
+                'SAMPLE TRADERS',
+                '9876543210',
+                'sample@example.com',
+                'Panipat, Haryana',
+                '',
+                'Haryana',
+                '',
+                '9876543210',
+                '06AAAAA0000A1Z5',
+                '',
+            ]);
+            fclose($handle);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    public function import(Request $request)
+    {
+        $request->validate([
+            'csv_file' => ['required', 'file', 'max:5120'],
+        ]);
+
+        $ext = strtolower($request->file('csv_file')->getClientOriginalExtension() ?: '');
+        if (! in_array($ext, ['csv', 'txt'], true)) {
+            return back()->with('error', 'Please upload a .csv file (not Excel .xlsx). Use Download template.');
+        }
+
+        $authUser = auth()->user();
+        $defaultCompanyId = (int) $authUser->company_id;
+        $path = $request->file('csv_file')->getRealPath();
+
+        $rows = $this->readCustomerCsvRows($path);
+        if ($rows === null) {
+            return back()->with('error', 'Unable to read the uploaded CSV file.');
+        }
+        if (count($rows) === 0) {
+            return back()->with('error', 'The CSV file is empty.');
+        }
+
+        $headerRow = array_shift($rows);
+        $map = $this->mapCustomerImportHeaders($headerRow);
+
+        if (! isset($map['name'])) {
+            $found = implode(', ', array_map(fn ($h) => '"' . $h . '"', $headerRow));
+
+            return back()->with(
+                'error',
+                'CSV must include a name column. Found headers: ' . ($found !== '' ? $found : '(none)') . '. Download the template for the correct format.'
+            );
+        }
+
+        $created = 0;
+        $updated = 0;
+        $skipped = 0;
+        $errors = [];
+        $rowNum = 1;
+
+        foreach ($rows as $row) {
+            $rowNum++;
+
+            if ($this->csvRowIsEmpty($row)) {
+                continue;
+            }
+
+            $name = trim((string) ($row[$map['name']] ?? ''));
+            if ($name === '') {
+                $skipped++;
+                $errors[] = "Row {$rowNum}: missing name.";
+                continue;
+            }
+
+            $rowCompanyId = isset($map['company_id'])
+                ? (int) trim((string) ($row[$map['company_id']] ?? ''))
+                : 0;
+            if ($rowCompanyId <= 0) {
+                $rowCompanyId = $defaultCompanyId;
+            }
+
+            // Non-superadmin can only import into their own company
+            if (! $authUser->isSuperAdmin() && $rowCompanyId !== $defaultCompanyId) {
+                $skipped++;
+                $errors[] = "Row {$rowNum}: company_id {$rowCompanyId} is not allowed.";
+                continue;
+            }
+
+            if (! \App\Models\Company::whereKey($rowCompanyId)->exists()) {
+                $skipped++;
+                $errors[] = "Row {$rowNum}: company_id {$rowCompanyId} does not exist.";
+                continue;
+            }
+
+            $createdBy = isset($map['created_by'])
+                ? (int) trim((string) ($row[$map['created_by']] ?? ''))
+                : 0;
+            if ($createdBy > 0) {
+                $creatorOk = \App\Models\User::whereKey($createdBy)
+                    ->when(! $authUser->isSuperAdmin(), fn ($q) => $q->where('company_id', $rowCompanyId))
+                    ->exists();
+                if (! $creatorOk) {
+                    $skipped++;
+                    $errors[] = "Row {$rowNum}: created_by {$createdBy} is invalid for company_id {$rowCompanyId}.";
+                    continue;
+                }
+            } else {
+                $createdBy = (int) $authUser->id;
+            }
+
+            if ($authUser->role === 'sales_admin' && $createdBy !== (int) $authUser->id) {
+                $skipped++;
+                $errors[] = "Row {$rowNum}: sales admin can only import with their own created_by.";
+                continue;
+            }
+
+            $phone = trim((string) ($row[$map['phone'] ?? -1] ?? ''));
+            $email = trim((string) ($row[$map['email'] ?? -1] ?? ''));
+            $address = trim((string) ($row[$map['address'] ?? -1] ?? ''));
+            $googleLocation = trim((string) ($row[$map['google_location'] ?? -1] ?? ''));
+            $state = trim((string) ($row[$map['state'] ?? -1] ?? ''));
+            $contact = trim((string) ($row[$map['contact_details'] ?? -1] ?? ''));
+            $gst = trim((string) ($row[$map['gst_number'] ?? -1] ?? ''));
+            $authorized = trim((string) ($row[$map['authorized_person'] ?? -1] ?? ''));
+            $mdDetails = trim((string) ($row[$map['md_details'] ?? -1] ?? ''));
+
+            if ($contact === '' && $phone !== '') {
+                $contact = $phone;
+            }
+            $contactDigits = preg_replace('/\D/', '', $contact);
+            if (strlen($contactDigits) >= 10) {
+                $contactDigits = substr($contactDigits, -10);
+            } elseif ($contactDigits === '') {
+                $contactDigits = '0000000000';
+            }
+
+            if ($gst === '') {
+                $gst = 'N/A';
+            }
+
+            $payload = [
+                'company_id' => $rowCompanyId,
+                'created_by' => $createdBy,
+                'phone' => $phone !== '' ? $phone : null,
+                'email' => $email !== '' ? $email : null,
+                'address' => $address !== '' ? $address : null,
+                'google_location' => $googleLocation !== '' ? Customer::normalizeGoogleLocation($googleLocation) : null,
+                'state' => $state !== '' ? $state : null,
+                'contact_details' => $contactDigits,
+                'gst_number' => $gst,
+                'authorized_person' => $authorized !== '' ? $authorized : null,
+                'md_details' => $mdDetails !== '' ? $mdDetails : null,
+            ];
+
+            $existing = Customer::where('company_id', $rowCompanyId)
+                ->where('name', $name)
+                ->when($gst !== 'N/A', fn ($q) => $q->where('gst_number', $gst))
+                ->first();
+
+            if ($existing) {
+                if ($authUser->role === 'sales_admin' && (int) $existing->created_by !== (int) $authUser->id) {
+                    $skipped++;
+                    $errors[] = "Row {$rowNum}: customer '{$name}' belongs to another user.";
+                    continue;
+                }
+                $existing->update($payload);
+                $updated++;
+            } else {
+                Customer::create(array_merge($payload, [
+                    'name' => $name,
+                ]));
+                $created++;
+            }
+        }
+
+        ActivityLogService::log(
+            'customer.imported',
+            "Customer CSV imported. Created: {$created}, Updated: {$updated}, Skipped: {$skipped}."
+        );
+
+        $message = "Import complete: {$created} created, {$updated} updated";
+        if ($skipped > 0) {
+            $message .= ", {$skipped} skipped";
+        }
+        $message .= '.';
+
+        if (! empty($errors)) {
+            $message .= ' Issues: ' . implode(' ', array_slice($errors, 0, 5));
+            if (count($errors) > 5) {
+                $message .= ' …';
+            }
+        }
+
+        return redirect('/customers')->with('success', $message);
+    }
+
+    /**
+     * @return list<list<string>>|null
+     */
+    private function readCustomerCsvRows(string $path): ?array
+    {
+        $raw = @file_get_contents($path);
+        if ($raw === false) {
+            return null;
+        }
+
+        // UTF-16 (Excel sometimes exports this)
+        if (str_starts_with($raw, "\xFF\xFE") || str_starts_with($raw, "\xFE\xFF")) {
+            $raw = mb_convert_encoding($raw, 'UTF-8', 'UTF-16');
+        } elseif (! mb_check_encoding($raw, 'UTF-8')) {
+            $raw = mb_convert_encoding($raw, 'UTF-8', 'Windows-1252');
+        }
+
+        $raw = preg_replace('/^\xEF\xBB\xBF/', '', $raw) ?? $raw;
+        $raw = str_replace(["\r\n", "\r"], "\n", $raw);
+        $raw = trim($raw);
+
+        if ($raw === '') {
+            return [];
+        }
+
+        $delimiter = $this->detectCsvDelimiter($raw);
+        $handle = fopen('php://temp', 'r+');
+        if ($handle === false) {
+            return null;
+        }
+
+        fwrite($handle, $raw);
+        rewind($handle);
+
+        $rows = [];
+        while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
+            $rows[] = array_map(fn ($cell) => trim((string) $cell), $row);
+        }
+        fclose($handle);
+
+        return $rows;
+    }
+
+    private function detectCsvDelimiter(string $raw): string
+    {
+        $firstLine = strtok($raw, "\n") ?: '';
+        $candidates = [',' => 0, ';' => 0, "\t" => 0, '|' => 0];
+
+        foreach ($candidates as $delimiter => $_) {
+            $candidates[$delimiter] = substr_count($firstLine, $delimiter);
+        }
+
+        arsort($candidates);
+        $best = array_key_first($candidates);
+
+        return ($candidates[$best] ?? 0) > 0 ? $best : ',';
+    }
+
+    private function mapCustomerImportHeaders(array $headerRow): array
+    {
+        $aliases = [
+            'company_id' => ['company_id', 'companyid', 'company'],
+            'created_by' => ['created_by', 'createdby', 'created by'],
+            'name' => ['name', 'party_name', 'party name', 'customer_name', 'customer name', 'customer'],
+            'phone' => ['phone', 'mobile'],
+            'email' => ['email'],
+            'address' => ['address', 'city'],
+            'google_location' => ['google_location', 'google location'],
+            'state' => ['state'],
+            'authorized_person' => ['authorized_person', 'authorized person', 'agent'],
+            'contact_details' => ['contact_details', 'contact details', 'contact_number', 'contact number', 'contact_no', 'contact no', 'contact no.'],
+            'gst_number' => ['gst_number', 'gst number', 'gst_no', 'gst no', 'gst no.', 'gst'],
+            'md_details' => ['md_details', 'md details', 'md'],
+        ];
+
+        $map = [];
+        foreach ($headerRow as $index => $label) {
+            $key = $this->normalizeCsvHeader((string) $label);
+            if ($key === '') {
+                continue;
+            }
+
+            foreach ($aliases as $field => $names) {
+                $normalizedNames = array_map(fn ($n) => $this->normalizeCsvHeader($n), $names);
+                if (in_array($key, $normalizedNames, true) && ! isset($map[$field])) {
+                    $map[$field] = $index;
+                }
+            }
+        }
+
+        return $map;
+    }
+
+    private function normalizeCsvHeader(string $label): string
+    {
+        $label = preg_replace('/^\xEF\xBB\xBF/', '', $label) ?? $label;
+        $label = strtolower(trim($label));
+        $label = str_replace(['"', "'"], '', $label);
+        $label = preg_replace('/[\s\-]+/', '_', $label) ?? $label;
+        $label = preg_replace('/_+/', '_', $label) ?? $label;
+
+        return trim($label, " \t\n\r\0\x0B._");
+    }
+
+    private function csvRowIsEmpty(array $row): bool
+    {
+        foreach ($row as $cell) {
+            if (trim((string) $cell) !== '') {
+                return false;
+            }
+        }
+
+        return true;
+    }
 }

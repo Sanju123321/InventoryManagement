@@ -12,6 +12,16 @@
     @if (session('success'))
         <div class="alert alert-success">{{ session('success') }}</div>
     @endif
+    @if (session('error'))
+        <div class="alert alert-danger">{{ session('error') }}</div>
+    @endif
+    @if ($errors->any())
+        <div class="alert alert-danger">
+            @foreach ($errors->all() as $error)
+                <p class="mb-0">{{ $error }}</p>
+            @endforeach
+        </div>
+    @endif
 
     <div class="card mb-4">
         <div class="card-header"><i class="fas fa-filter me-1"></i> Filters</div>
@@ -71,6 +81,9 @@
         <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
             <div><i class="fas fa-file-invoice me-1"></i> Orders</div>
             <div class="d-flex flex-wrap gap-2">
+                <button type="button" class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#importOrdersModal">
+                    <i class="fas fa-file-import me-1"></i><span class="btn-label">Import CSV</span>
+                </button>
                 <a href="{{ route('sales.orders.export', request()->query()) }}" class="btn btn-success btn-sm">
                     <i class="fas fa-file-csv me-1"></i><span class="btn-label">Export CSV</span>
                 </a>
@@ -150,6 +163,39 @@
             </div>
 
             <div class="p-3">{{ $orders->links() }}</div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="importOrdersModal" tabindex="-1" aria-labelledby="importOrdersModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="POST" action="{{ route('sales.orders.import') }}" enctype="multipart/form-data">
+                    @csrf
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="importOrdersModalLabel">Import Sales Orders (CSV)</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="small text-muted mb-3">
+                            Upload a CSV with columns: Customer Name, Firm Name, Product Name, Qty, Rate, GST Rate, Discount, Notes, Driver Name.
+                            Customer, firm, and product names must already exist. Rows with the same customer + firm + notes are grouped into one order.
+                        </p>
+                        <div class="mb-3">
+                            <label for="orders_csv_file" class="form-label">CSV File</label>
+                            <input type="file" class="form-control" id="orders_csv_file" name="csv_file" accept=".csv,text/csv" required>
+                        </div>
+                        <a href="{{ route('sales.orders.import.template') }}" class="btn btn-sm btn-outline-secondary">
+                            <i class="fas fa-download me-1"></i>Download template
+                        </a>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-file-import me-1"></i>Import
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 @endsection
