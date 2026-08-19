@@ -127,6 +127,34 @@
                         @endif
                     @endif
 
+                    {{-- Team: attendance & leave --}}
+                    @if ($user->hasRole(['admin', 'sales_admin', 'inventory_admin']))
+                        <div class="sb-sidenav-menu-heading">Team</div>
+                        @if ($user->isAdmin())
+                            <a class="nav-link {{ request()->is('admin/attendance*') || request()->is('attendance*') ? 'active' : '' }}"
+                                href="{{ url('/admin/attendance') }}">
+                                <div class="sb-nav-link-icon"><i class="fas fa-user-check"></i></div>
+                                Attendance
+                            </a>
+                            <a class="nav-link {{ request()->is('admin/leaves*') ? 'active' : '' }}"
+                                href="{{ url('/admin/leaves') }}">
+                                <div class="sb-nav-link-icon"><i class="fas fa-calendar-check"></i></div>
+                                Leave Approvals
+                            </a>
+                        @else
+                            <a class="nav-link {{ request()->is('attendance*') ? 'active' : '' }}"
+                                href="{{ url('/attendance') }}">
+                                <div class="sb-nav-link-icon"><i class="fas fa-user-check"></i></div>
+                                My Attendance
+                            </a>
+                            <a class="nav-link {{ request()->is('leaves*') ? 'active' : '' }}"
+                                href="{{ url('/leaves') }}">
+                                <div class="sb-nav-link-icon"><i class="fas fa-calendar-plus"></i></div>
+                                Apply Leave
+                            </a>
+                        @endif
+                    @endif
+
                     {{-- Admin-only section --}}
                     @if ($user->isAdmin())
                         <div class="sb-sidenav-menu-heading">Administration</div>

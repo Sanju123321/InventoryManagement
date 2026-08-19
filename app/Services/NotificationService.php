@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\AppNotification;
+use App\Models\LeaveRequest;
 use App\Models\RawMaterial;
 use App\Models\SalesOrder;
 use App\Models\User;
@@ -119,6 +120,38 @@ class NotificationService
         ]);
 
         $this->pushToCompany($companyId, $title, $message);
+    }
+
+    public function notifyLeaveApplied(LeaveRequest $leave): void
+    {
+        $employee = $leave->user->name ?? 'A team member';
+        $title = 'Leave application from ' . $employee;
+        $message = "{$employee} applied for {$leave->typeLabel()} "
+            . "({$leave->from_date->format('d-m-Y')} to {$leave->to_date->format('d-m-Y')}).";
+
+        $this->store($leave->company_id, 'leave_applied', $title, $message, [
+            'leave_id' => (string) $leave->id,
+            'user_id' => (string) $leave->user_id,
+            'url' => '/admin/leaves',
+        ]);
+
+        $this->pushToCompany($leave->company_id, $title, $message);
+    }
+
+    public function notifyLeaveReviewed(LeaveRequest $leave): void
+    {
+        $title = 'Leave ' . $leave->statusLabel();
+        $message = "Your {$leave->typeLabel()} from {$leave->from_date->format('d-m-Y')} "
+            . "to {$leave->to_date->format('d-m-Y')} was {$leave->status}.";
+
+        $this->store($leave->company_id, 'leave_reviewed', $title, $message, [
+            'leave_id' => (string) $leave->id,
+            'user_id' => (string) $leave->user_id,
+            'status' => $leave->status,
+            'url' => '/leaves',
+        ]);
+
+        $this->pushToCompany($leave->company_id, $title, $message);
     }
 
     // ─────────────────────────────────────────────────────────────────────────

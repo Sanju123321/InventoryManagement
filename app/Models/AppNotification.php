@@ -38,6 +38,8 @@ class AppNotification extends Model
             'announcement'        => 'fas fa-bullhorn text-primary',
             'plan_expired'        => 'fas fa-ban text-danger',
             'plan_expiring_soon'  => 'fas fa-clock text-warning',
+            'leave_applied'       => 'fas fa-calendar-plus text-warning',
+            'leave_reviewed'      => 'fas fa-calendar-check text-success',
             default               => 'fas fa-bell text-info',
         };
     }

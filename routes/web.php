@@ -25,6 +25,8 @@ use App\Http\Controllers\FirmController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ImpersonateController;
 use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\LeaveRequestController;
 use App\Http\Controllers\SuperAdminAnalyticsController;
 use App\Http\Controllers\CompanyAnalyticsController;
 use App\Http\Controllers\AnnouncementController;
@@ -68,6 +70,26 @@ Route::middleware(['auth.admin', 'check.status'])->group(function () {
 
     // FCM token saving — all roles
     Route::post('/api/save-token', [FcmController::class, 'saveToken'])->name('fcm.save-token');
+
+    // Attendance & leave — team members mark/apply; admin reviews everyone
+    Route::middleware('check.role:admin,sales_admin,inventory_admin')->group(function () {
+        Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
+        Route::post('/attendance', [AttendanceController::class, 'store'])->name('attendance.store');
+        Route::put('/attendance/{attendance}', [AttendanceController::class, 'update'])->name('attendance.update');
+        Route::delete('/attendance/{attendance}', [AttendanceController::class, 'destroy'])->name('attendance.destroy');
+        Route::get('/leaves', [LeaveRequestController::class, 'index'])->name('leaves.index');
+        Route::post('/leaves', [LeaveRequestController::class, 'store'])->name('leaves.store');
+        Route::put('/leaves/{leave}', [LeaveRequestController::class, 'update'])->name('leaves.update');
+        Route::delete('/leaves/{leave}', [LeaveRequestController::class, 'destroy'])->name('leaves.destroy');
+    });
+
+    Route::middleware('check.role:admin')->group(function () {
+        Route::get('/admin/attendance', [AttendanceController::class, 'admin'])->name('attendance.admin');
+        Route::get('/admin/leaves', [LeaveRequestController::class, 'admin'])->name('leaves.admin');
+        Route::get('/admin/leaves/export', [LeaveRequestController::class, 'export'])->name('leaves.export');
+        Route::patch('/admin/leaves/{leave}/approve', [LeaveRequestController::class, 'approve'])->name('leaves.approve');
+        Route::patch('/admin/leaves/{leave}/reject', [LeaveRequestController::class, 'reject'])->name('leaves.reject');
+    });
 
     // Activity Log — admin only
     Route::middleware('check.role:admin')->group(function () {
