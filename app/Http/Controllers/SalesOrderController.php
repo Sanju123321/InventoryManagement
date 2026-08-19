@@ -8,7 +8,6 @@ use App\Models\Payment;
 use App\Models\Product;
 use App\Models\ProductCost;
 use App\Models\SalesOrder;
-use App\Models\SalesOrderItem;
 use App\Services\ActivityLogService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -567,38 +566,50 @@ class SalesOrderController extends Controller
                     ->first()
                     ?->payment_method ?? '';
 
-                $header = [
-                    'order_ref' => $order->id,
-                    'order_date' => $order->created_at?->format('d-m-Y') ?? '',
-                    'firm_name' => $order->firm?->name ?? '',
-                    'customer_name' => $order->customer?->name ?? '',
-                    'gst_rate' => $gstRate,
-                    'discount' => $this->csvMoney($discount),
-                    'notes' => $order->notes ?? '',
-                    'status' => $order->status,
-                    'paid_amount' => $this->csvMoney((float) $order->paid_amount),
-                    'payment_method' => $paymentMethod,
-                    'receiving_ok' => $order->receiving_ok ? 'Yes' : 'No',
-                    'driver_name' => $order->driver_name ?? '',
-                    'driver_whatsapp' => $order->driver_whatsapp ?? '',
-                    'driver_vehicle' => $order->driver_vehicle ?? '',
-                    'delivery_date' => $this->csvDate($order->delivery_date),
-                    'subtotal' => $this->csvMoney($subtotal),
-                    'gst_amount' => $this->csvMoney($gstAmount),
-                    'grand_total' => $this->csvMoney((float) $order->total_amount),
-                    'pending' => $this->csvMoney((float) $order->pending_amount),
-                    'created_by' => $order->creator?->name ?? '',
-                ];
+                $productNames = $order->items
+                    ->map(fn ($item) => $item->product?->name)
+                    ->filter()
+                    ->unique()
+                    ->implode('; ');
+                $productSkus = $order->items
+                    ->map(fn ($item) => $item->product?->sku)
+                    ->filter()
+                    ->unique()
+                    ->implode('; ');
+                $qty = (int) $order->items->sum('quantity');
+                $rates = $order->items->map(fn ($item) => (float) $item->price)->unique()->values();
+                $rate = $rates->count() === 1 ? $this->csvMoney((float) $rates->first()) : '';
+                $lineTotal = (float) $order->items->sum(function ($item) {
+                    return (float) ($item->total ?: round($item->quantity * $item->price, 2));
+                });
 
-                $items = $order->items;
-                if ($items->isEmpty()) {
-                    fputcsv($handle, $this->salesOrderExportRow($header, null));
-                    continue;
-                }
-
-                foreach ($items as $item) {
-                    fputcsv($handle, $this->salesOrderExportRow($header, $item));
-                }
+                fputcsv($handle, [
+                    $order->id,
+                    $order->created_at?->format('d-m-Y') ?? '',
+                    $order->firm?->name ?? '',
+                    $order->customer?->name ?? '',
+                    $productNames,
+                    $productSkus,
+                    $qty > 0 ? $qty : '',
+                    $rate,
+                    $gstRate,
+                    $this->csvMoney($discount),
+                    $order->notes ?? '',
+                    $order->status,
+                    $this->csvMoney((float) $order->paid_amount),
+                    $paymentMethod,
+                    $order->receiving_ok ? 'Yes' : 'No',
+                    $order->driver_name ?? '',
+                    $this->csvWhatsapp($order->driver_whatsapp),
+                    $order->driver_vehicle ?? '',
+                    $this->csvDate($order->delivery_date),
+                    $lineTotal > 0 ? $this->csvMoney($lineTotal) : '',
+                    $this->csvMoney($subtotal),
+                    $this->csvMoney($gstAmount),
+                    $this->csvMoney((float) $order->total_amount),
+                    $this->csvMoney((float) $order->pending_amount),
+                    $order->creator?->name ?? '',
+                ]);
             }
 
             fclose($handle);
@@ -607,47 +618,20 @@ class SalesOrderController extends Controller
         ]);
     }
 
-    /**
-     * @param  array<string, mixed>  $header
-     */
-    private function salesOrderExportRow(array $header, ?SalesOrderItem $item): array
-    {
-        $qty = $item?->quantity;
-        $rate = $item ? (float) $item->price : null;
-        $lineTotal = $item ? (float) ($item->total ?: round($item->quantity * $item->price, 2)) : null;
-
-        return [
-            $header['order_ref'],
-            $header['order_date'],
-            $header['firm_name'],
-            $header['customer_name'],
-            $item?->product?->name ?? '',
-            $item?->product?->sku ?? '',
-            $qty ?? '',
-            $rate !== null ? $this->csvMoney($rate) : '',
-            $header['gst_rate'],
-            $header['discount'],
-            $header['notes'],
-            $header['status'],
-            $header['paid_amount'],
-            $header['payment_method'],
-            $header['receiving_ok'],
-            $header['driver_name'],
-            $header['driver_whatsapp'],
-            $header['driver_vehicle'],
-            $header['delivery_date'],
-            $lineTotal !== null ? $this->csvMoney($lineTotal) : '',
-            $header['subtotal'],
-            $header['gst_amount'],
-            $header['grand_total'],
-            $header['pending'],
-            $header['created_by'],
-        ];
-    }
-
     private function csvMoney(float $value): string
     {
         return number_format($value, 2, '.', '');
+    }
+
+    private function csvWhatsapp(?string $value): string
+    {
+        $digits = preg_replace('/\D/', '', (string) $value);
+        if ($digits === '') {
+            return '';
+        }
+
+        // Leading tab keeps Excel from turning the number into 9.15E+09.
+        return "\t" . $digits;
     }
 
     private function csvDate(mixed $value): string
