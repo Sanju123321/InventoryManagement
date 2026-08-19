@@ -4,11 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\Customer;
 use App\Models\Firm;
+use App\Models\Payment;
 use App\Models\Product;
 use App\Models\ProductCost;
 use App\Models\SalesOrder;
 use App\Models\SalesOrderItem;
 use App\Services\ActivityLogService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -495,7 +497,8 @@ class SalesOrderController extends Controller
     public function export(Request $request)
     {
         $companyId = auth()->user()->company_id;
-        $query = SalesOrder::where('company_id', $companyId)->with('customer', 'firm', 'creator', 'items.product');
+        $query = SalesOrder::where('company_id', $companyId)
+            ->with('customer', 'firm', 'creator', 'items.product', 'payments');
 
         if (auth()->user()->role === 'sales_admin') {
             $query->where('created_by', auth()->id());
@@ -520,33 +523,35 @@ class SalesOrderController extends Controller
 
         $filename = 'sales_orders_' . date('Ymd_His') . '.csv';
 
-        $headers = [
-            'Content-Type'        => 'text/csv; charset=UTF-8',
-            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
-        ];
-
-        $callback = function () use ($orders) {
+        return response()->streamDownload(function () use ($orders) {
             $handle = fopen('php://output', 'w');
             fwrite($handle, "\xEF\xBB\xBF");
 
             fputcsv($handle, [
-                'Order #',
-                'Date',
-                'Firm',
-                'Customer',
-                'Product',
+                'Order Ref',
+                'Order Date',
+                'Firm Name',
+                'Customer Name',
+                'Product Name',
+                'Product SKU',
                 'Qty',
-                'Rate (Rs)',
-                'Line Total (Rs)',
-                'Sub Total (Rs)',
-                'GST Rate (%)',
-                'GST (Rs)',
-                'Discount (Rs)',
-                'Grand Total (Rs)',
-                'Paid (Rs)',
-                'Pending (Rs)',
+                'Rate',
+                'GST Rate',
+                'Discount',
+                'Notes',
                 'Status',
+                'Paid Amount',
+                'Payment Method',
                 'Receiving Ok',
+                'Driver Name',
+                'Driver WhatsApp',
+                'Driver Vehicle',
+                'Delivery Date',
+                'Line Total',
+                'Sub Total',
+                'GST Amount',
+                'Grand Total',
+                'Pending',
                 'Created By',
             ]);
 
@@ -557,60 +562,105 @@ class SalesOrderController extends Controller
                     ? 0.0
                     : (float) ($order->gst_amount > 0 ? $order->gst_amount : round($subtotal * $gstRate / 100, 2));
                 $discount = (float) ($order->discount_amount ?? 0);
-                $receivingOk = $order->receiving_ok ? 'Receiving Ok' : 'Pending';
+                $paymentMethod = $order->payments
+                    ->sortByDesc('payment_date')
+                    ->first()
+                    ?->payment_method ?? '';
+
+                $header = [
+                    'order_ref' => $order->id,
+                    'order_date' => $order->created_at?->format('d-m-Y') ?? '',
+                    'firm_name' => $order->firm?->name ?? '',
+                    'customer_name' => $order->customer?->name ?? '',
+                    'gst_rate' => $gstRate,
+                    'discount' => $this->csvMoney($discount),
+                    'notes' => $order->notes ?? '',
+                    'status' => $order->status,
+                    'paid_amount' => $this->csvMoney((float) $order->paid_amount),
+                    'payment_method' => $paymentMethod,
+                    'receiving_ok' => $order->receiving_ok ? 'Yes' : 'No',
+                    'driver_name' => $order->driver_name ?? '',
+                    'driver_whatsapp' => $order->driver_whatsapp ?? '',
+                    'driver_vehicle' => $order->driver_vehicle ?? '',
+                    'delivery_date' => $this->csvDate($order->delivery_date),
+                    'subtotal' => $this->csvMoney($subtotal),
+                    'gst_amount' => $this->csvMoney($gstAmount),
+                    'grand_total' => $this->csvMoney((float) $order->total_amount),
+                    'pending' => $this->csvMoney((float) $order->pending_amount),
+                    'created_by' => $order->creator?->name ?? '',
+                ];
 
                 $items = $order->items;
                 if ($items->isEmpty()) {
-                    fputcsv($handle, [
-                        $order->id,
-                        $order->created_at->format('d-m-Y'),
-                        $order->firm?->name ?? '-',
-                        $order->customer?->name ?? '-',
-                        '-',
-                        '',
-                        '',
-                        '',
-                        number_format($subtotal, 2),
-                        $gstRate,
-                        number_format($gstAmount, 2),
-                        number_format($discount, 2),
-                        number_format($order->total_amount, 2),
-                        number_format($order->paid_amount, 2),
-                        number_format($order->pending_amount, 2),
-                        $order->statusLabel(),
-                        $receivingOk,
-                        $order->creator?->name ?? '-',
-                    ]);
-                } else {
-                    foreach ($items as $i => $item) {
-                        fputcsv($handle, [
-                            $order->id,
-                            $order->created_at->format('d-m-Y'),
-                            $i === 0 ? ($order->firm?->name ?? '-') : '',
-                            $order->customer?->name ?? '-',
-                            $item->product?->name ?? '-',
-                            $item->quantity,
-                            number_format($item->price, 2),
-                            number_format($item->total, 2),
-                            $i === 0 ? number_format($subtotal, 2) : '',
-                            $i === 0 ? $gstRate : '',
-                            $i === 0 ? number_format($gstAmount, 2) : '',
-                            $i === 0 ? number_format($discount, 2) : '',
-                            $i === 0 ? number_format($order->total_amount, 2) : '',
-                            $i === 0 ? number_format($order->paid_amount, 2) : '',
-                            $i === 0 ? number_format($order->pending_amount, 2) : '',
-                            $i === 0 ? $order->statusLabel() : '',
-                            $i === 0 ? $receivingOk : '',
-                            $i === 0 ? ($order->creator?->name ?? '-') : '',
-                        ]);
-                    }
+                    fputcsv($handle, $this->salesOrderExportRow($header, null));
+                    continue;
+                }
+
+                foreach ($items as $item) {
+                    fputcsv($handle, $this->salesOrderExportRow($header, $item));
                 }
             }
 
             fclose($handle);
-        };
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
 
-        return response()->stream($callback, 200, $headers);
+    /**
+     * @param  array<string, mixed>  $header
+     */
+    private function salesOrderExportRow(array $header, ?SalesOrderItem $item): array
+    {
+        $qty = $item?->quantity;
+        $rate = $item ? (float) $item->price : null;
+        $lineTotal = $item ? (float) ($item->total ?: round($item->quantity * $item->price, 2)) : null;
+
+        return [
+            $header['order_ref'],
+            $header['order_date'],
+            $header['firm_name'],
+            $header['customer_name'],
+            $item?->product?->name ?? '',
+            $item?->product?->sku ?? '',
+            $qty ?? '',
+            $rate !== null ? $this->csvMoney($rate) : '',
+            $header['gst_rate'],
+            $header['discount'],
+            $header['notes'],
+            $header['status'],
+            $header['paid_amount'],
+            $header['payment_method'],
+            $header['receiving_ok'],
+            $header['driver_name'],
+            $header['driver_whatsapp'],
+            $header['driver_vehicle'],
+            $header['delivery_date'],
+            $lineTotal !== null ? $this->csvMoney($lineTotal) : '',
+            $header['subtotal'],
+            $header['gst_amount'],
+            $header['grand_total'],
+            $header['pending'],
+            $header['created_by'],
+        ];
+    }
+
+    private function csvMoney(float $value): string
+    {
+        return number_format($value, 2, '.', '');
+    }
+
+    private function csvDate(mixed $value): string
+    {
+        if ($value === null || $value === '' || $value === '0000-00-00') {
+            return '';
+        }
+
+        try {
+            return Carbon::parse($value)->format('d-m-Y');
+        } catch (\Throwable) {
+            return '';
+        }
     }
 
     public function importTemplate()
@@ -625,24 +675,66 @@ class SalesOrderController extends Controller
             $handle = fopen('php://output', 'w');
             fwrite($handle, "\xEF\xBB\xBF");
             fputcsv($handle, [
-                'Customer Name',
+                'Order Ref',
+                'Order Date',
                 'Firm Name',
+                'Customer Name',
                 'Product Name',
+                'Product SKU',
                 'Qty',
                 'Rate',
                 'GST Rate',
                 'Discount',
                 'Notes',
+                'Status',
+                'Paid Amount',
+                'Payment Method',
+                'Receiving Ok',
                 'Driver Name',
+                'Driver WhatsApp',
+                'Driver Vehicle',
+                'Delivery Date',
             ]);
+            // Two line items share Order Ref so they become one order.
             fputcsv($handle, [
-                'SAMPLE TRADERS',
+                'SO-001',
+                now()->format('d-m-Y'),
                 'Main Firm',
-                'Sample Product',
+                'SAMPLE TRADERS',
+                'Sample Product A',
+                'SKU-A',
                 '10',
                 '100',
                 '18',
                 '0',
+                'Sample remark',
+                'approved',
+                '0',
+                'cash',
+                'No',
+                '',
+                '',
+                '',
+                '',
+            ]);
+            fputcsv($handle, [
+                'SO-001',
+                now()->format('d-m-Y'),
+                'Main Firm',
+                'SAMPLE TRADERS',
+                'Sample Product B',
+                'SKU-B',
+                '5',
+                '50',
+                '18',
+                '0',
+                'Sample remark',
+                'approved',
+                '0',
+                'cash',
+                'No',
+                '',
+                '',
                 '',
                 '',
             ]);
@@ -655,11 +747,17 @@ class SalesOrderController extends Controller
     public function import(Request $request)
     {
         $request->validate([
-            'csv_file' => 'required|file|mimes:csv,txt|max:5120',
+            'csv_file' => ['required', 'file', 'max:5120'],
         ]);
 
-        $companyId = auth()->user()->company_id;
-        $isAdmin = auth()->user()->role === 'admin';
+        $ext = strtolower($request->file('csv_file')->getClientOriginalExtension() ?: '');
+        if (! in_array($ext, ['csv', 'txt'], true)) {
+            return back()->with('error', 'Please upload a .csv file (not Excel .xlsx). Use Download template.');
+        }
+
+        $user = auth()->user();
+        $companyId = $user->company_id;
+        $isAdmin = $user->role === 'admin';
         $path = $request->file('csv_file')->getRealPath();
         $handle = fopen($path, 'r');
 
@@ -676,11 +774,22 @@ class SalesOrderController extends Controller
         $headerRow[0] = preg_replace('/^\xEF\xBB\xBF/', '', (string) $headerRow[0]);
         $map = $this->mapSalesOrderImportHeaders($headerRow);
 
-        foreach (['customer_name', 'product_name', 'quantity', 'price'] as $required) {
-            if (! isset($map[$required])) {
-                fclose($handle);
-                return back()->with('error', 'CSV must include Customer Name, Product Name, Qty, and Rate columns. Download the template for the correct format.');
-            }
+        if (! isset($map['customer_name']) || ! isset($map['firm_name']) || ! isset($map['quantity']) || ! isset($map['price'])) {
+            fclose($handle);
+            $found = implode(', ', array_map(fn ($h) => '"' . trim((string) $h) . '"', $headerRow));
+
+            return back()->with(
+                'error',
+                'CSV must include Firm Name, Customer Name, Qty, and Rate columns. Found headers: '
+                . ($found !== '' ? $found : '(none)')
+                . '. Download the template for the correct format.'
+            );
+        }
+
+        if (! isset($map['product_name']) && ! isset($map['product_sku'])) {
+            fclose($handle);
+
+            return back()->with('error', 'CSV must include Product Name and/or Product SKU. Download the template for the correct format.');
         }
 
         $groups = [];
@@ -694,42 +803,99 @@ class SalesOrderController extends Controller
                 continue;
             }
 
-            $customerName = trim((string) ($row[$map['customer_name']] ?? ''));
-            $productName = trim((string) ($row[$map['product_name']] ?? ''));
-            $qty = (int) preg_replace('/[^\d]/', '', (string) ($row[$map['quantity']] ?? '0'));
-            $price = (float) str_replace([',', '₹', 'Rs', ' '], '', (string) ($row[$map['price']] ?? '0'));
-            $firmName = trim((string) ($row[$map['firm_name'] ?? -1] ?? ''));
-            $gstRate = isset($map['gst_rate']) ? (int) ($row[$map['gst_rate']] ?? 18) : 18;
-            $discount = isset($map['discount']) ? (float) str_replace(',', '', (string) ($row[$map['discount']] ?? 0)) : 0;
-            $notes = trim((string) ($row[$map['notes'] ?? -1] ?? ''));
-            $driverName = trim((string) ($row[$map['driver_name'] ?? -1] ?? ''));
+            $customerName = $this->csvCell($row, $map, 'customer_name');
+            $firmName = $this->csvCell($row, $map, 'firm_name');
+            $productName = $this->csvCell($row, $map, 'product_name');
+            $productSku = $this->csvCell($row, $map, 'product_sku');
+            $qty = (int) preg_replace('/[^\d]/', '', $this->csvCell($row, $map, 'quantity'));
+            $price = $this->parseCsvMoney($this->csvCell($row, $map, 'price'));
+            $gstRate = $this->parseCsvGstRate($this->csvCell($row, $map, 'gst_rate'));
+            $discount = $this->parseCsvMoney($this->csvCell($row, $map, 'discount'));
+            $notes = $this->csvCell($row, $map, 'notes');
+            $orderRef = $this->csvCell($row, $map, 'order_ref');
+            $orderDate = $this->parseCsvDate($this->csvCell($row, $map, 'order_date'));
+            $status = $this->csvCell($row, $map, 'status');
+            $paidAmount = $this->parseCsvMoney($this->csvCell($row, $map, 'paid_amount'));
+            $paymentMethod = strtolower($this->csvCell($row, $map, 'payment_method'));
+            $receivingOk = $this->parseCsvYes($this->csvCell($row, $map, 'receiving_ok'));
+            $driverName = $this->csvCell($row, $map, 'driver_name');
+            $driverWhatsapp = preg_replace('/\D/', '', $this->csvCell($row, $map, 'driver_whatsapp'));
+            $driverVehicle = $this->csvCell($row, $map, 'driver_vehicle');
+            $deliveryDate = $this->parseCsvDate($this->csvCell($row, $map, 'delivery_date'));
 
-            if ($customerName === '' || $productName === '' || $qty < 1 || $price <= 0) {
-                $errors[] = "Row {$rowNum}: customer, product, qty (>0) and rate (>0) are required.";
+            if ($customerName === '' || $firmName === '' || ($productName === '' && $productSku === '') || $qty < 1 || $price <= 0) {
+                $errors[] = "Row {$rowNum}: firm, customer, product (name or SKU), qty (>0) and rate (>0) are required.";
                 continue;
             }
 
-            if (! in_array($gstRate, [0, 5, 18], true)) {
-                $gstRate = 18;
-            }
-
-            $groupKey = strtolower($customerName) . '|' . strtolower($firmName) . '|' . strtolower($notes);
+            $groupKey = $orderRef !== ''
+                ? 'ref:' . mb_strtolower($orderRef)
+                : 'auto:' . mb_strtolower($customerName) . '|' . mb_strtolower($firmName) . '|' . mb_strtolower($notes) . '|' . ($orderDate?->toDateString() ?? '');
 
             if (! isset($groups[$groupKey])) {
                 $groups[$groupKey] = [
+                    'order_ref' => $orderRef,
                     'customer_name' => $customerName,
                     'firm_name' => $firmName,
                     'gst_rate' => $gstRate,
                     'discount' => $discount,
                     'notes' => $notes,
+                    'order_date' => $orderDate,
+                    'status' => $status,
+                    'paid_amount' => $paidAmount,
+                    'payment_method' => $paymentMethod,
+                    'receiving_ok' => $receivingOk,
                     'driver_name' => $driverName,
+                    'driver_whatsapp' => $driverWhatsapp,
+                    'driver_vehicle' => $driverVehicle,
+                    'delivery_date' => $deliveryDate,
                     'items' => [],
                     'rows' => [],
                 ];
+            } else {
+                $group = &$groups[$groupKey];
+                if ($group['gst_rate'] === 18 && $gstRate !== 18) {
+                    $group['gst_rate'] = $gstRate;
+                }
+                if ($group['discount'] <= 0 && $discount > 0) {
+                    $group['discount'] = $discount;
+                }
+                if ($group['notes'] === '' && $notes !== '') {
+                    $group['notes'] = $notes;
+                }
+                if ($group['status'] === '' && $status !== '') {
+                    $group['status'] = $status;
+                }
+                if ($group['paid_amount'] <= 0 && $paidAmount > 0) {
+                    $group['paid_amount'] = $paidAmount;
+                }
+                if ($group['payment_method'] === '' && $paymentMethod !== '') {
+                    $group['payment_method'] = $paymentMethod;
+                }
+                if (! $group['receiving_ok'] && $receivingOk) {
+                    $group['receiving_ok'] = true;
+                }
+                if ($group['driver_name'] === '' && $driverName !== '') {
+                    $group['driver_name'] = $driverName;
+                }
+                if ($group['driver_whatsapp'] === '' && $driverWhatsapp !== '') {
+                    $group['driver_whatsapp'] = $driverWhatsapp;
+                }
+                if ($group['driver_vehicle'] === '' && $driverVehicle !== '') {
+                    $group['driver_vehicle'] = $driverVehicle;
+                }
+                if ($group['order_date'] === null && $orderDate) {
+                    $group['order_date'] = $orderDate;
+                }
+                if ($group['delivery_date'] === null && $deliveryDate) {
+                    $group['delivery_date'] = $deliveryDate;
+                }
+                unset($group);
             }
 
             $groups[$groupKey]['items'][] = [
                 'product_name' => $productName,
+                'product_sku' => $productSku,
                 'quantity' => $qty,
                 'price' => $price,
             ];
@@ -738,51 +904,44 @@ class SalesOrderController extends Controller
 
         fclose($handle);
 
+        $customerQuery = Customer::where('company_id', $companyId);
+        if ($user->role === 'sales_admin') {
+            $customerQuery->where('created_by', $user->id);
+        }
+        $customersByName = $customerQuery->get()->keyBy(fn (Customer $c) => mb_strtolower(trim($c->name)));
+        $firmsByName = Firm::where('company_id', $companyId)->get()->keyBy(fn (Firm $f) => mb_strtolower(trim($f->name)));
+        $products = Product::where('company_id', $companyId)->get();
+        $productsByName = $products->keyBy(fn (Product $p) => mb_strtolower(trim($p->name)));
+        $productsBySku = $products->filter(fn (Product $p) => $p->sku)->keyBy(fn (Product $p) => mb_strtolower(trim($p->sku)));
+
         $created = 0;
         $skipped = 0;
 
         foreach ($groups as $group) {
-            $customerQuery = Customer::where('company_id', $companyId)
-                ->where('name', $group['customer_name']);
-            if (auth()->user()->role === 'sales_admin') {
-                $customerQuery->where('created_by', auth()->id());
-            }
-            $customer = $customerQuery->first();
+            $rowLabel = implode(',', $group['rows']);
+            $customer = $customersByName->get(mb_strtolower($group['customer_name']));
 
             if (! $customer) {
                 $skipped++;
-                $errors[] = "Customer '{$group['customer_name']}' not found (rows " . implode(',', $group['rows']) . ').';
+                $errors[] = "Customer '{$group['customer_name']}' not found (rows {$rowLabel}).";
                 continue;
             }
 
-            $firm = null;
-            if ($group['firm_name'] !== '') {
-                $firm = Firm::where('company_id', $companyId)
-                    ->where('name', $group['firm_name'])
-                    ->first();
-                if (! $firm) {
-                    $skipped++;
-                    $errors[] = "Firm '{$group['firm_name']}' not found for customer '{$group['customer_name']}'.";
-                    continue;
-                }
-            } else {
-                $firm = Firm::where('company_id', $companyId)->active()->orderBy('name')->first();
-                if (! $firm) {
-                    $skipped++;
-                    $errors[] = "No firm found for customer '{$group['customer_name']}'. Add a Firm Name column or create a firm first.";
-                    continue;
-                }
+            $firm = $firmsByName->get(mb_strtolower($group['firm_name']));
+            if (! $firm) {
+                $skipped++;
+                $errors[] = "Firm '{$group['firm_name']}' not found (rows {$rowLabel}).";
+                continue;
             }
 
             $itemsData = [];
             $itemError = false;
             foreach ($group['items'] as $item) {
-                $product = Product::where('company_id', $companyId)
-                    ->where('name', $item['product_name'])
-                    ->first();
+                $product = $this->matchImportedProduct($item['product_name'], $item['product_sku'], $productsByName, $productsBySku);
                 if (! $product) {
+                    $label = $item['product_sku'] !== '' ? $item['product_sku'] : $item['product_name'];
                     $skipped++;
-                    $errors[] = "Product '{$item['product_name']}' not found for customer '{$group['customer_name']}'.";
+                    $errors[] = "Product '{$label}' not found (rows {$rowLabel}).";
                     $itemError = true;
                     break;
                 }
@@ -803,7 +962,41 @@ class SalesOrderController extends Controller
                 (float) $group['discount']
             );
 
-            DB::transaction(function () use ($companyId, $customer, $firm, $isAdmin, $totals, $itemsData, $group, &$created) {
+            $status = $this->resolveImportedStatus($group['status'], $isAdmin);
+            $paidAmount = min(max(0, (float) $group['paid_amount']), $totals['grand_total']);
+            $paymentMethod = in_array($group['payment_method'], ['cash', 'bank_transfer', 'upi', 'cheque', 'other'], true)
+                ? $group['payment_method']
+                : 'cash';
+
+            if (! $isAdmin) {
+                $paidAmount = 0;
+                $status = 'pending';
+            } elseif ($paidAmount > 0 && $status === 'pending') {
+                $status = 'approved';
+            }
+
+            $receivingOk = $isAdmin && $group['receiving_ok'] && $status === 'dispatched';
+            $driverName = $isAdmin && $group['driver_name'] !== '' ? $group['driver_name'] : null;
+            $driverWhatsapp = $isAdmin && strlen((string) $group['driver_whatsapp']) >= 10
+                ? substr((string) $group['driver_whatsapp'], -15)
+                : null;
+            $driverVehicle = $isAdmin && $group['driver_vehicle'] !== '' ? $group['driver_vehicle'] : null;
+            $deliveryDate = $isAdmin && $group['delivery_date'] ? $group['delivery_date']->toDateString() : null;
+
+            if ($driverName && ! $driverWhatsapp) {
+                $errors[] = "Order for '{$group['customer_name']}' (rows {$rowLabel}): driver WhatsApp missing, driver fields skipped.";
+                $driverName = null;
+                $driverVehicle = null;
+                $deliveryDate = null;
+            }
+
+            DB::transaction(function () use (
+                $companyId, $user, $customer, $firm, $isAdmin, $totals, $itemsData, $group,
+                $status, $paidAmount, $paymentMethod, $receivingOk, $driverName, $driverWhatsapp,
+                $driverVehicle, $deliveryDate, &$created
+            ) {
+                $pending = max(0, round($totals['grand_total'] - $paidAmount, 2));
+
                 $order = SalesOrder::create([
                     'company_id' => $companyId,
                     'customer_id' => $customer->id,
@@ -813,14 +1006,24 @@ class SalesOrderController extends Controller
                     'gst_amount' => $totals['gst_amount'],
                     'discount_amount' => $totals['discount_amount'],
                     'total_amount' => $totals['grand_total'],
-                    'paid_amount' => 0,
-                    'pending_amount' => $totals['grand_total'],
-                    'status' => $isAdmin ? 'approved' : 'pending',
-                    'approved_by' => $isAdmin ? auth()->id() : null,
-                    'created_by' => auth()->id(),
+                    'paid_amount' => $paidAmount,
+                    'pending_amount' => $pending,
+                    'status' => $status,
+                    'approved_by' => $isAdmin && $status !== 'pending' && $status !== 'rejected' ? $user->id : null,
+                    'created_by' => $user->id,
                     'notes' => $group['notes'] !== '' ? $group['notes'] : null,
-                    'driver_name' => $group['driver_name'] !== '' ? $group['driver_name'] : null,
+                    'driver_name' => $driverName,
+                    'driver_whatsapp' => $driverWhatsapp,
+                    'driver_vehicle' => $driverVehicle,
+                    'delivery_date' => $deliveryDate,
+                    'receiving_ok' => $receivingOk,
+                    'receiving_ok_at' => $receivingOk ? now() : null,
                 ]);
+
+                if ($group['order_date'] instanceof Carbon) {
+                    $order->created_at = $group['order_date']->startOfDay();
+                    $order->saveQuietly();
+                }
 
                 foreach ($itemsData as $item) {
                     $order->items()->create([
@@ -828,6 +1031,18 @@ class SalesOrderController extends Controller
                         'quantity' => $item['quantity'],
                         'price' => $item['price'],
                         'total' => round($item['quantity'] * $item['price'], 2),
+                    ]);
+                }
+
+                if ($paidAmount > 0) {
+                    Payment::create([
+                        'company_id' => $companyId,
+                        'sales_order_id' => $order->id,
+                        'amount' => $paidAmount,
+                        'payment_date' => ($group['order_date'] instanceof Carbon)
+                            ? $group['order_date']->toDateString()
+                            : now()->toDateString(),
+                        'payment_method' => $paymentMethod,
                     ]);
                 }
 
@@ -847,10 +1062,14 @@ class SalesOrderController extends Controller
         $message .= '.';
 
         if (! empty($errors)) {
-            $message .= ' Issues: ' . implode(' ', array_slice($errors, 0, 5));
-            if (count($errors) > 5) {
+            $message .= ' Issues: ' . implode(' ', array_slice($errors, 0, 8));
+            if (count($errors) > 8) {
                 $message .= ' …';
             }
+        }
+
+        if ($created === 0) {
+            return redirect('/sales/orders')->with('error', $message);
         }
 
         return redirect('/sales/orders')->with('success', $message);
@@ -859,20 +1078,30 @@ class SalesOrderController extends Controller
     private function mapSalesOrderImportHeaders(array $headerRow): array
     {
         $aliases = [
-            'customer_name' => ['customer name', 'customer', 'party name'],
+            'order_ref' => ['order ref', 'order reference', 'order #', 'order no', 'order no.', 'bill no', 'bill #'],
+            'order_date' => ['order date', 'date', 'bill date'],
             'firm_name' => ['firm name', 'firm'],
+            'customer_name' => ['customer name', 'customer', 'party name', 'account name'],
             'product_name' => ['product name', 'product'],
+            'product_sku' => ['product sku', 'sku', 'item code'],
             'quantity' => ['qty', 'quantity'],
             'price' => ['rate', 'price', 'rate (rs)', 'rate (rs.)'],
             'gst_rate' => ['gst rate', 'gst rate (%)', 'gst'],
             'discount' => ['discount', 'discount (rs)', 'discount (rs.)'],
-            'notes' => ['notes', 'note'],
+            'paid_amount' => ['paid amount', 'paid', 'paid (rs)', 'paid (rs.)'],
+            'payment_method' => ['payment method', 'pay method'],
+            'status' => ['status'],
+            'receiving_ok' => ['receiving ok', 'receiving_ok'],
+            'notes' => ['notes', 'note', 'remark', 'remarks'],
             'driver_name' => ['driver name', 'driver'],
+            'driver_whatsapp' => ['driver whatsapp', 'whatsapp'],
+            'driver_vehicle' => ['driver vehicle', 'vehicle'],
+            'delivery_date' => ['delivery date'],
         ];
 
         $map = [];
         foreach ($headerRow as $index => $label) {
-            $key = strtolower(trim((string) $label));
+            $key = $this->normalizeCsvHeader((string) $label);
             foreach ($aliases as $field => $names) {
                 if (in_array($key, $names, true) && ! isset($map[$field])) {
                     $map[$field] = $index;
@@ -881,6 +1110,122 @@ class SalesOrderController extends Controller
         }
 
         return $map;
+    }
+
+    private function csvCell(array $row, array $map, string $key): string
+    {
+        if (! isset($map[$key])) {
+            return '';
+        }
+
+        return trim((string) ($row[$map[$key]] ?? ''));
+    }
+
+    private function normalizeCsvHeader(string $label): string
+    {
+        $label = preg_replace('/^\xEF\xBB\xBF/', '', $label) ?? $label;
+        $label = strtolower(trim($label));
+        $label = str_replace(['₹', '_'], ['rs', ' '], $label);
+
+        return preg_replace('/\s+/', ' ', $label) ?? $label;
+    }
+
+    private function parseCsvMoney(string $value): float
+    {
+        $value = str_ireplace(['₹', 'rs.', 'rs', ','], '', $value);
+
+        return (float) preg_replace('/[^\d.\-]/', '', $value);
+    }
+
+    private function parseCsvGstRate(string $value): int
+    {
+        $rate = (int) preg_replace('/[^\d]/', '', $value);
+        if ($value === '') {
+            return 18;
+        }
+
+        return in_array($rate, [0, 5, 18], true) ? $rate : 18;
+    }
+
+    private function parseCsvYes(string $value): bool
+    {
+        $value = strtolower(trim($value));
+
+        return in_array($value, ['1', 'yes', 'y', 'true', 'receiving ok', 'ok'], true);
+    }
+
+    private function parseCsvDate(string $value): ?Carbon
+    {
+        $value = trim($value);
+        if ($value === '' || $value === '-') {
+            return null;
+        }
+
+        foreach (['d-m-Y', 'd/m/Y', 'Y-m-d', 'd-m-Y H:i', 'd/m/Y H:i', 'Y-m-d H:i:s'] as $format) {
+            try {
+                $parsed = Carbon::createFromFormat($format, $value);
+                if ($parsed !== false) {
+                    return $parsed;
+                }
+            } catch (\Throwable) {
+                // try next format
+            }
+        }
+
+        try {
+            return Carbon::parse($value);
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    private function resolveImportedStatus(string $value, bool $isAdmin): string
+    {
+        if (! $isAdmin) {
+            return 'pending';
+        }
+
+        $value = strtolower(trim($value));
+        $value = str_replace(' ', '_', $value);
+
+        return match ($value) {
+            'pending' => 'pending',
+            'rejected' => 'rejected',
+            'dispatched' => 'dispatched',
+            'paid' => 'approved',
+            default => 'approved',
+        };
+    }
+
+    private function matchImportedProduct(
+        string $name,
+        string $sku,
+        $productsByName,
+        $productsBySku
+    ): ?Product {
+        if ($sku !== '') {
+            $found = $productsBySku->get(mb_strtolower($sku));
+            if ($found) {
+                return $found;
+            }
+        }
+
+        if ($name !== '') {
+            $found = $productsByName->get(mb_strtolower($name));
+            if ($found) {
+                return $found;
+            }
+
+            if (preg_match('/^(.+?)\s*\(([^)]+)\)\s*$/', $name, $matches)) {
+                $found = $productsBySku->get(mb_strtolower($matches[2]))
+                    ?: $productsByName->get(mb_strtolower(trim($matches[1])));
+                if ($found) {
+                    return $found;
+                }
+            }
+        }
+
+        return null;
     }
 
     private function csvRowIsEmpty(array $row): bool

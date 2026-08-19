@@ -108,7 +108,7 @@ Route::middleware(['auth.admin', 'check.status'])->group(function () {
         Route::get('/sales/orders/recent-items', [SalesOrderController::class, 'recentItems'])->name('sales.orders.recent-items');
         Route::get('/sales/orders/create', [SalesOrderController::class, 'create']);
         Route::post('/sales/orders', [SalesOrderController::class, 'store']);
-        Route::get('/sales/orders/{order}', [SalesOrderController::class, 'show']);
+        Route::get('/sales/orders/{order}', [SalesOrderController::class, 'show'])->whereNumber('order');
         Route::get('/sales/orders/{order}/print', [SalesOrderController::class, 'print'])->name('sales.orders.print');
     });
 

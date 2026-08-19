@@ -84,7 +84,7 @@
                 <button type="button" class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#importOrdersModal">
                     <i class="fas fa-file-import me-1"></i><span class="btn-label">Import CSV</span>
                 </button>
-                <a href="{{ route('sales.orders.export', request()->query()) }}" class="btn btn-success btn-sm">
+                <a href="{{ url('/sales/orders/export') }}{{ request()->getQueryString() ? '?' . request()->getQueryString() : '' }}" class="btn btn-success btn-sm">
                     <i class="fas fa-file-csv me-1"></i><span class="btn-label">Export CSV</span>
                 </a>
                 <a href="{{ url('/sales/orders/create') }}" class="btn btn-primary btn-sm">
@@ -167,24 +167,60 @@
     </div>
 
     <div class="modal fade" id="importOrdersModal" tabindex="-1" aria-labelledby="importOrdersModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
-                <form method="POST" action="{{ route('sales.orders.import') }}" enctype="multipart/form-data">
+                <form method="POST" action="{{ url('/sales/orders/import') }}" enctype="multipart/form-data">
                     @csrf
                     <div class="modal-header">
                         <h5 class="modal-title" id="importOrdersModalLabel">Import Sales Orders (CSV)</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <p class="small text-muted mb-3">
-                            Upload a CSV with columns: Customer Name, Firm Name, Product Name, Qty, Rate, GST Rate, Discount, Notes, Driver Name.
-                            Customer, firm, and product names must already exist. Rows with the same customer + firm + notes are grouped into one order.
+                        <p class="small text-muted mb-2">
+                            One CSV row is one line item. Rows that share the same <strong>Order Ref</strong> become one order
+                            with multiple products. If Order Ref is blank, rows are grouped by customer + firm + notes + date.
                         </p>
+                        <p class="small text-muted mb-2">
+                            Firm, customer, and product names (or SKU) must already exist. Totals, GST amount, and pending
+                            amount are calculated automatically — do not import those.
+                        </p>
+                        <div class="table-responsive mb-3">
+                            <table class="table table-sm table-bordered mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Column</th>
+                                        <th>Required</th>
+                                        <th>Notes</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td>Order Ref</td><td>No</td><td>Use the same value on every line of one order</td></tr>
+                                    <tr><td>Order Date</td><td>No</td><td>d-m-Y, e.g. 04-08-2026</td></tr>
+                                    <tr><td>Firm Name</td><td>Yes</td><td>Must match an existing firm</td></tr>
+                                    <tr><td>Customer Name</td><td>Yes</td><td>Must match an existing customer</td></tr>
+                                    <tr><td>Product Name</td><td>Yes*</td><td>Name or SKU required</td></tr>
+                                    <tr><td>Product SKU</td><td>Yes*</td><td>Looked up if name is missing or ambiguous</td></tr>
+                                    <tr><td>Qty</td><td>Yes</td><td>Whole number, at least 1</td></tr>
+                                    <tr><td>Rate</td><td>Yes</td><td>Unit price in ₹</td></tr>
+                                    <tr><td>GST Rate</td><td>No</td><td>0, 5, or 18 (default 18)</td></tr>
+                                    <tr><td>Discount</td><td>No</td><td>Flat ₹ off the bill</td></tr>
+                                    <tr><td>Notes</td><td>No</td><td>Remark / order notes</td></tr>
+                                    <tr><td>Status</td><td>No</td><td>pending, approved, rejected, dispatched (admin only)</td></tr>
+                                    <tr><td>Paid Amount</td><td>No</td><td>Creates a payment; pending is recalculated</td></tr>
+                                    <tr><td>Payment Method</td><td>No</td><td>cash, bank_transfer, upi, cheque, other</td></tr>
+                                    <tr><td>Receiving Ok</td><td>No</td><td>Yes / No — only applied when status is dispatched</td></tr>
+                                    <tr><td>Driver Name</td><td>No</td><td>Admin import only</td></tr>
+                                    <tr><td>Driver WhatsApp</td><td>No</td><td>Required if driver name is set</td></tr>
+                                    <tr><td>Driver Vehicle</td><td>No</td><td></td></tr>
+                                    <tr><td>Delivery Date</td><td>No</td><td>d-m-Y</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
                         <div class="mb-3">
                             <label for="orders_csv_file" class="form-label">CSV File</label>
                             <input type="file" class="form-control" id="orders_csv_file" name="csv_file" accept=".csv,text/csv" required>
                         </div>
-                        <a href="{{ route('sales.orders.import.template') }}" class="btn btn-sm btn-outline-secondary">
+                        <a href="{{ url('/sales/orders/import/template') }}" class="btn btn-sm btn-outline-secondary">
                             <i class="fas fa-download me-1"></i>Download template
                         </a>
                     </div>
