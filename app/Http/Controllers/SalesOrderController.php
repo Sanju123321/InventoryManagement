@@ -524,10 +524,9 @@ class SalesOrderController extends Controller
 
         return response()->streamDownload(function () use ($orders) {
             $handle = fopen('php://output', 'w');
-            fwrite($handle, "\xEF\xBB\xBF");
 
             fputcsv($handle, [
-                'Order Ref',
+                "\xEF\xBB\xBFOrder Ref",
                 'Order Date',
                 'Firm Name',
                 'Customer Name',
@@ -566,56 +565,53 @@ class SalesOrderController extends Controller
                     ->first()
                     ?->payment_method ?? '';
 
-                $productNames = $order->items
-                    ->map(fn ($item) => $item->product?->name)
-                    ->filter()
-                    ->unique()
-                    ->implode('; ');
-                $productSkus = $order->items
-                    ->map(fn ($item) => $item->product?->sku)
-                    ->filter()
-                    ->unique()
-                    ->implode('; ');
-                $qty = (int) $order->items->sum('quantity');
-                $rates = $order->items->map(fn ($item) => (float) $item->price)->unique()->values();
-                $rate = $rates->count() === 1 ? $this->csvMoney((float) $rates->first()) : '';
-                $lineTotal = (float) $order->items->sum(function ($item) {
-                    return (float) ($item->total ?: round($item->quantity * $item->price, 2));
-                });
+                $items = $order->items->isEmpty() ? [null] : $order->items;
 
-                fputcsv($handle, [
-                    $order->id,
-                    $order->created_at?->format('d-m-Y') ?? '',
-                    $order->firm?->name ?? '',
-                    $order->customer?->name ?? '',
-                    $productNames,
-                    $productSkus,
-                    $qty > 0 ? $qty : '',
-                    $rate,
-                    $gstRate,
-                    $this->csvMoney($discount),
-                    $order->notes ?? '',
-                    $order->status,
-                    $this->csvMoney((float) $order->paid_amount),
-                    $paymentMethod,
-                    $order->receiving_ok ? 'Yes' : 'No',
-                    $order->driver_name ?? '',
-                    $this->csvWhatsapp($order->driver_whatsapp),
-                    $order->driver_vehicle ?? '',
-                    $this->csvDate($order->delivery_date),
-                    $lineTotal > 0 ? $this->csvMoney($lineTotal) : '',
-                    $this->csvMoney($subtotal),
-                    $this->csvMoney($gstAmount),
-                    $this->csvMoney((float) $order->total_amount),
-                    $this->csvMoney((float) $order->pending_amount),
-                    $order->creator?->name ?? '',
-                ]);
+                foreach ($items as $item) {
+                    $lineTotal = $item
+                        ? (float) ($item->total ?: round((float) $item->quantity * (float) $item->price, 2))
+                        : 0.0;
+
+                    fputcsv($handle, [
+                        $this->csvOrderRef($order->id),
+                        $order->created_at?->format('d-m-Y') ?? '',
+                        $order->firm?->name ?? '',
+                        $order->customer?->name ?? '',
+                        $item?->product?->name ?? '',
+                        $item?->product?->sku ?? '',
+                        $item ? (int) $item->quantity : '',
+                        $item ? $this->csvMoney((float) $item->price) : '',
+                        $gstRate,
+                        $this->csvMoney($discount),
+                        $order->notes ?? '',
+                        $order->status,
+                        $this->csvMoney((float) $order->paid_amount),
+                        $paymentMethod,
+                        $order->receiving_ok ? 'Yes' : 'No',
+                        $order->driver_name ?? '',
+                        $this->csvWhatsapp($order->driver_whatsapp),
+                        $order->driver_vehicle ?? '',
+                        $this->csvDate($order->delivery_date),
+                        $lineTotal > 0 ? $this->csvMoney($lineTotal) : '',
+                        $this->csvMoney($subtotal),
+                        $this->csvMoney($gstAmount),
+                        $this->csvMoney((float) $order->total_amount),
+                        $this->csvMoney((float) $order->pending_amount),
+                        $order->creator?->name ?? '',
+                    ]);
+                }
             }
 
             fclose($handle);
         }, $filename, [
             'Content-Type' => 'text/csv; charset=UTF-8',
         ]);
+    }
+
+    private function csvOrderRef(int $id): string
+    {
+        // Leading tab keeps Excel from hiding/shifting the first column.
+        return "\t#" . $id;
     }
 
     private function csvMoney(float $value): string
@@ -796,7 +792,7 @@ class SalesOrderController extends Controller
             $gstRate = $this->parseCsvGstRate($this->csvCell($row, $map, 'gst_rate'));
             $discount = $this->parseCsvMoney($this->csvCell($row, $map, 'discount'));
             $notes = $this->csvCell($row, $map, 'notes');
-            $orderRef = $this->csvCell($row, $map, 'order_ref');
+            $orderRef = ltrim($this->csvCell($row, $map, 'order_ref'), " \t#");
             $orderDate = $this->parseCsvDate($this->csvCell($row, $map, 'order_date'));
             $status = $this->csvCell($row, $map, 'status');
             $paidAmount = $this->parseCsvMoney($this->csvCell($row, $map, 'paid_amount'));
